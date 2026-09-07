@@ -1,4 +1,4 @@
-#include "sdfg/transformations/einsum2dot.h"
+#include "sdfg/einsum/transformations/einsum2dot.h"
 
 #include <cstddef>
 #include <nlohmann/json_fwd.hpp>
@@ -10,7 +10,7 @@
 #include "sdfg/data_flow/library_node.h"
 #include "sdfg/data_flow/library_nodes/math/blas/dot_node.h"
 #include "sdfg/data_flow/library_nodes/math/math.h"
-#include "sdfg/data_flow/library_nodes/math/tensor/einsum_node.h"
+#include "sdfg/einsum/einsum_node.h"
 #include "sdfg/optimization_report/pass_report_consumer.h"
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/symbolic/symbolic.h"
@@ -20,9 +20,9 @@
 #include "sdfg/types/utils.h"
 
 namespace sdfg {
-namespace transformations {
+namespace einsum {
 
-Einsum2Dot::Einsum2Dot(math::tensor::EinsumNode& einsum_node) : einsum_node_(einsum_node) {}
+Einsum2Dot::Einsum2Dot(einsum::EinsumNode& einsum_node) : einsum_node_(einsum_node) {}
 
 std::string Einsum2Dot::name() const { return "Einsum2Dot"; }
 
@@ -176,13 +176,13 @@ Einsum2Dot Einsum2Dot::from_json(builder::StructuredSDFGBuilder& builder, const 
     size_t einsum_node_id = j["einsum_node_element_id"].get<size_t>();
     auto* einsum_node_element = builder.find_element_by_id(einsum_node_id);
     if (!einsum_node_element) {
-        throw InvalidTransformationDescriptionException(
+        throw transformations::InvalidTransformationDescriptionException(
             "Element with ID " + std::to_string(einsum_node_id) + " not found"
         );
     }
-    auto* einsum_node = dynamic_cast<math::tensor::EinsumNode*>(einsum_node_element);
+    auto* einsum_node = dynamic_cast<einsum::EinsumNode*>(einsum_node_element);
     if (!einsum_node) {
-        throw InvalidTransformationDescriptionException(
+        throw transformations::InvalidTransformationDescriptionException(
             "Element with ID " + std::to_string(einsum_node_id) + " is not an EinsumNode"
         );
     }
@@ -190,5 +190,5 @@ Einsum2Dot Einsum2Dot::from_json(builder::StructuredSDFGBuilder& builder, const 
     return Einsum2Dot(*einsum_node);
 }
 
-} // namespace transformations
+} // namespace einsum
 } // namespace sdfg

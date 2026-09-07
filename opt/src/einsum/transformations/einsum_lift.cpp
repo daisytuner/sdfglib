@@ -1,4 +1,4 @@
-#include "sdfg/transformations/einsum_lift.h"
+#include "sdfg/einsum/transformations/einsum_lift.h"
 
 #include <cstddef>
 #include <nlohmann/json_fwd.hpp>
@@ -8,16 +8,16 @@
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/data_flow/access_node.h"
-#include "sdfg/data_flow/library_nodes/math/tensor/einsum_node.h"
 #include "sdfg/data_flow/memlet.h"
 #include "sdfg/data_flow/tasklet.h"
+#include "sdfg/einsum/einsum_node.h"
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/transformations/transformation.h"
 #include "sdfg/types/scalar.h"
 #include "sdfg/types/type.h"
 
 namespace sdfg {
-namespace transformations {
+namespace einsum {
 
 bool EinsumLift::subsets_eq(const data_flow::Subset& subset1, const data_flow::Subset& subset2) {
     if (subset1.size() != subset2.size()) {
@@ -148,9 +148,9 @@ void EinsumLift::apply(builder::StructuredSDFGBuilder& builder, analysis::Analys
 
     // Create EinsumNode
     auto& libnode = builder.add_library_node<
-        math::tensor::EinsumNode,
+        einsum::EinsumNode,
         const std::vector<std::string>&,
-        const std::vector<math::tensor::EinsumDimension>&,
+        const std::vector<EinsumDimension>&,
         const data_flow::Subset&,
         const std::vector<data_flow::Subset>&>(*block, this->tasklet_.debug_info(), inputs, {}, out_indices, in_indices);
 
@@ -209,11 +209,12 @@ EinsumLift EinsumLift::from_json(builder::StructuredSDFGBuilder& builder, const 
     size_t tasklet_id = j["tasklet_element_id"].get<size_t>();
     auto* tasklet_element = builder.find_element_by_id(tasklet_id);
     if (!tasklet_element) {
-        throw InvalidTransformationDescriptionException("Element with ID " + std::to_string(tasklet_id) + " not found");
+        throw transformations::
+            InvalidTransformationDescriptionException("Element with ID " + std::to_string(tasklet_id) + " not found");
     }
     auto* tasklet = dynamic_cast<data_flow::Tasklet*>(tasklet_element);
     if (!tasklet) {
-        throw InvalidTransformationDescriptionException(
+        throw transformations::InvalidTransformationDescriptionException(
             "Element with ID " + std::to_string(tasklet_id) + " is not a tasklet"
         );
     }
@@ -221,5 +222,5 @@ EinsumLift EinsumLift::from_json(builder::StructuredSDFGBuilder& builder, const 
     return EinsumLift(*tasklet);
 }
 
-} // namespace transformations
+} // namespace einsum
 } // namespace sdfg

@@ -5,19 +5,21 @@
 
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
-#include "sdfg/data_flow/library_nodes/math/tensor/einsum_node.h"
+#include "sdfg/data_flow/memlet.h"
+#include "sdfg/data_flow/tasklet.h"
 #include "sdfg/transformations/transformation.h"
 
 namespace sdfg {
-namespace transformations {
+namespace einsum {
 
-class EinsumExtend : public Transformation {
+class EinsumLift : public transformations::Transformation {
 private:
-    math::tensor::EinsumNode& einsum_node_;
-    math::tensor::EinsumNode* new_einsum_node_;
+    data_flow::Tasklet& tasklet_;
+
+    bool subsets_eq(const data_flow::Subset& subset1, const data_flow::Subset& subset2);
 
 public:
-    EinsumExtend(math::tensor::EinsumNode& einsum_node);
+    EinsumLift(data_flow::Tasklet& tasklet);
 
     virtual std::string name() const override;
 
@@ -26,12 +28,10 @@ public:
 
     virtual void apply(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) override;
 
-    math::tensor::EinsumNode* new_einsum_node();
-
     virtual void to_json(nlohmann::json& j) const override;
 
-    static EinsumExtend from_json(builder::StructuredSDFGBuilder& builder, const nlohmann::json& j);
+    static EinsumLift from_json(builder::StructuredSDFGBuilder& builder, const nlohmann::json& j);
 };
 
-} // namespace transformations
+} // namespace einsum
 } // namespace sdfg

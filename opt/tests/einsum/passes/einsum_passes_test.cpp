@@ -1,15 +1,15 @@
-#include "sdfg/passes/einsum.h"
+#include "sdfg/einsum/passes/einsum_passes.h"
 
 #include <gtest/gtest.h>
 
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
+#include "sdfg/einsum/transformations/einsum_lift.h"
 #include "sdfg/function.h"
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/for.h"
 #include "sdfg/structured_control_flow/map.h"
 #include "sdfg/symbolic/symbolic.h"
-#include "sdfg/transformations/einsum_lift.h"
 #include "sdfg/types/array.h"
 #include "sdfg/types/pointer.h"
 #include "sdfg/types/scalar.h"
@@ -86,7 +86,7 @@ TEST(EinsumDetectionPassTest, GEMM) {
 
     // Run pass
     analysis::AnalysisManager analysis_manager(sdfg);
-    passes::EinsumDetectionPass einsum_detection_pass;
+    einsum::EinsumDetectionPass einsum_detection_pass;
     ASSERT_TRUE(einsum_detection_pass.run(builder, analysis_manager));
 
     // Check
@@ -169,9 +169,9 @@ TEST(EinsumLowerPassTest, GEMM) {
 
     // Run pass
     analysis::AnalysisManager analysis_manager(sdfg);
-    passes::EinsumDetectionPass einsum_detection_pass;
+    einsum::EinsumDetectionPass einsum_detection_pass;
     ASSERT_TRUE(einsum_detection_pass.run(builder, analysis_manager));
-    passes::EinsumLowerPass einsum_lower_pass;
+    einsum::EinsumLowerPass einsum_lower_pass;
     EXPECT_TRUE(einsum_lower_pass.run(builder, analysis_manager));
 
     // Check
@@ -268,7 +268,7 @@ TEST(EinsumDetectionPassTest, Means) {
 
     // Run pass
     analysis::AnalysisManager analysis_manager(sdfg);
-    passes::EinsumDetectionPass einsum_detection_pass;
+    einsum::EinsumDetectionPass einsum_detection_pass;
     ASSERT_TRUE(einsum_detection_pass.run(builder, analysis_manager));
 
     // Check
@@ -370,9 +370,9 @@ TEST(EinsumLowerPassTest, Means) {
 
     // Run pass
     analysis::AnalysisManager analysis_manager(sdfg);
-    passes::EinsumDetectionPass einsum_detection_pass;
+    einsum::EinsumDetectionPass einsum_detection_pass;
     ASSERT_TRUE(einsum_detection_pass.run(builder, analysis_manager));
-    passes::EinsumLowerPass einsum_lower_pass;
+    einsum::EinsumLowerPass einsum_lower_pass;
     EXPECT_TRUE(einsum_lower_pass.run(builder, analysis_manager));
 
     // Check
@@ -469,7 +469,7 @@ TEST(EinsumDetectionPassTest, Mean) {
 
     // Run pass
     analysis::AnalysisManager analysis_manager(sdfg);
-    passes::EinsumDetectionPass einsum_detection_pass;
+    einsum::EinsumDetectionPass einsum_detection_pass;
     ASSERT_TRUE(einsum_detection_pass.run(builder, analysis_manager));
 
     // Check
@@ -555,9 +555,9 @@ TEST(EinsumLowerPassTest, Mean) {
 
     // Run pass
     analysis::AnalysisManager analysis_manager(sdfg);
-    passes::EinsumDetectionPass einsum_detection_pass;
+    einsum::EinsumDetectionPass einsum_detection_pass;
     ASSERT_TRUE(einsum_detection_pass.run(builder, analysis_manager));
-    passes::EinsumLowerPass einsum_lower_pass;
+    einsum::EinsumLowerPass einsum_lower_pass;
     EXPECT_TRUE(einsum_lower_pass.run(builder, analysis_manager));
 
     // Check

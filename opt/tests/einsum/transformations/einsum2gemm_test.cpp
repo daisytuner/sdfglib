@@ -1,4 +1,4 @@
-#include "sdfg/transformations/einsum2gemm.h"
+#include "sdfg/einsum/transformations/einsum2gemm.h"
 
 #include <gtest/gtest.h>
 #include <string>
@@ -11,7 +11,6 @@
 #include "sdfg/data_flow/data_flow_node.h"
 #include "sdfg/data_flow/library_nodes/math/blas/gemm_node.h"
 #include "sdfg/data_flow/library_nodes/math/math.h"
-#include "sdfg/data_flow/library_nodes/math/tensor/einsum_node.h"
 #include "sdfg/data_flow/memlet.h"
 #include "sdfg/element.h"
 #include "sdfg/function.h"
@@ -75,9 +74,9 @@ TEST(Einsum2GemmTest, Simple) {
     auto& C1 = builder.add_access(block, "C");
     auto& C2 = builder.add_access(block, "C");
     auto& libnode = builder.add_library_node<
-        math::tensor::EinsumNode,
+        einsum::EinsumNode,
         const std::vector<std::string>&,
-        const std::vector<math::tensor::EinsumDimension>&,
+        const std::vector<einsum::EinsumDimension>&,
         const data_flow::Subset&,
         const std::vector<data_flow::Subset>&>(
         block, DebugInfo(), {"_in1", "_in2"}, {{i, zero, l}, {j, zero, m}, {k, zero, n}}, {i, j}, {{i, k}, {k, j}}
@@ -90,11 +89,11 @@ TEST(Einsum2GemmTest, Simple) {
     dump_sdfg(builder.subject(), "0.init");
 
     // Check
-    auto* einsum_node = dynamic_cast<math::tensor::EinsumNode*>(&libnode);
+    auto* einsum_node = dynamic_cast<einsum::EinsumNode*>(&libnode);
     ASSERT_TRUE(einsum_node);
 
     analysis::AnalysisManager analysis_manager(sdfg);
-    transformations::Einsum2Gemm transformation(*einsum_node);
+    einsum::Einsum2Gemm transformation(*einsum_node);
     ASSERT_TRUE(transformation.can_be_applied(builder, analysis_manager));
     transformation.apply(builder, analysis_manager);
 
@@ -170,9 +169,9 @@ TEST(Einsum2GemmTest, WithAlpha) {
     auto& C2 = builder.add_access(block, "C");
     auto& alpha = builder.add_access(block, "alpha");
     auto& libnode = builder.add_library_node<
-        math::tensor::EinsumNode,
+        einsum::EinsumNode,
         const std::vector<std::string>&,
-        const std::vector<math::tensor::EinsumDimension>&,
+        const std::vector<einsum::EinsumDimension>&,
         const data_flow::Subset&,
         const std::vector<data_flow::Subset>&>(
         block,
@@ -189,13 +188,13 @@ TEST(Einsum2GemmTest, WithAlpha) {
     builder.add_computational_memlet(block, libnode, "__einsum_out", C2, {}, desc_m);
 
     // Check
-    auto* einsum_node = dynamic_cast<math::tensor::EinsumNode*>(&libnode);
+    auto* einsum_node = dynamic_cast<einsum::EinsumNode*>(&libnode);
     ASSERT_TRUE(einsum_node);
 
     dump_sdfg(builder.subject(), "0.init");
 
     analysis::AnalysisManager analysis_manager(sdfg);
-    transformations::Einsum2Gemm transformation(*einsum_node);
+    einsum::Einsum2Gemm transformation(*einsum_node);
     ASSERT_TRUE(transformation.can_be_applied(builder, analysis_manager));
     transformation.apply(builder, analysis_manager);
 

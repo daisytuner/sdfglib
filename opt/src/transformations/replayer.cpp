@@ -1,8 +1,4 @@
-#include <sdfg/transformations/einsum2dot.h>
-#include <sdfg/transformations/einsum2gemm.h>
-#include <sdfg/transformations/einsum_extend.h>
-#include <sdfg/transformations/einsum_lift.h>
-#include <sdfg/transformations/einsum_promotion.h>
+#include <sdfg/einsum/einsum.h>
 #include <sdfg/transformations/in_local_storage.h>
 #include <sdfg/transformations/local_storage.h>
 #include <sdfg/transformations/loop_distribute.h>
@@ -104,15 +100,15 @@ void Replayer::replay(
         } else if (transformation_name == "KernelLocalStorage") {
             this->apply<transformations::KernelLocalStorage>(builder, analysis_manager, desc, skip_if_not_applicable);
         } else if (transformation_name == "EinsumLift") {
-            this->apply<transformations::EinsumLift>(builder, analysis_manager, desc, skip_if_not_applicable);
+            this->apply<einsum::EinsumLift>(builder, analysis_manager, desc, skip_if_not_applicable);
         } else if (transformation_name == "EinsumExtend") {
-            this->apply<transformations::EinsumExtend>(builder, analysis_manager, desc, skip_if_not_applicable);
+            this->apply<einsum::EinsumExtend>(builder, analysis_manager, desc, skip_if_not_applicable);
         } else if (transformation_name == "EinsumExpand") {
-            this->apply<transformations::EinsumPromotion>(builder, analysis_manager, desc, skip_if_not_applicable);
+            this->apply<einsum::EinsumPromotion>(builder, analysis_manager, desc, skip_if_not_applicable);
         } else if (transformation_name == "Einsum2Dot") {
-            this->apply<transformations::Einsum2Dot>(builder, analysis_manager, desc, skip_if_not_applicable);
+            this->apply<einsum::Einsum2Dot>(builder, analysis_manager, desc, skip_if_not_applicable);
         } else if (transformation_name == "Einsum2Gemm") {
-            this->apply<transformations::Einsum2Gemm>(builder, analysis_manager, desc, skip_if_not_applicable);
+            this->apply<einsum::Einsum2Gemm>(builder, analysis_manager, desc, skip_if_not_applicable);
         } else {
             throw transformations::InvalidTransformationDescriptionException(
                 "Unknown transformation: " + transformation_name.get<std::string>()

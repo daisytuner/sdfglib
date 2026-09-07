@@ -25,12 +25,18 @@ configure_file(
 
 set(SOURCE_FILES
     src/analysis/data_transfer_elimination_analysis.cpp
+    src/einsum/einsum_node.cpp
+    src/einsum/passes/einsum_passes.cpp
+    src/einsum/transformations/einsum_extend.cpp
+    src/einsum/transformations/einsum_lift.cpp
+    src/einsum/transformations/einsum_promotion.cpp
+    src/einsum/transformations/einsum2dot.cpp
+    src/einsum/transformations/einsum2gemm.cpp
     src/passes/code_motion/extended_block_hoisting.cpp
     src/passes/code_motion/extended_block_sorting.cpp
     src/passes/collapse_pass.cpp
     src/passes/tiling_pass.cpp
     src/passes/dot_expansion_pass.cpp
-    src/passes/einsum.cpp
     src/passes/loop_fusion/loop_fusion_by_access.cpp
     src/passes/loop_fusion/loop_fusion_pass.cpp
     src/passes/normalization/loop_normal_form.cpp
@@ -110,11 +116,6 @@ set(SOURCE_FILES
     src/targets/rocm/stdlib/memset.cpp
     src/targets/vectorize/codegen/vectorize_dispatcher.cpp
     src/transformations/collapse_to_depth.cpp
-    src/transformations/einsum_extend.cpp
-    src/transformations/einsum_lift.cpp
-    src/transformations/einsum_promotion.cpp
-    src/transformations/einsum2dot.cpp
-    src/transformations/einsum2gemm.cpp
     src/transformations/in_local_storage.cpp
     src/transformations/local_storage.cpp
     src/transformations/loop_condition_normalize.cpp

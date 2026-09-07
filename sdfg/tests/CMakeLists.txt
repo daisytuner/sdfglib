@@ -61,7 +61,6 @@ set(TEST_FILES
     data_flow/library_nodes/math/tensor/const_padding_node_test.cpp
     data_flow/library_nodes/math/tensor/conv_test.cpp
     data_flow/library_nodes/math/tensor/copy_node_test.cpp
-    data_flow/library_nodes/math/tensor/einsum_test.cpp
     data_flow/library_nodes/math/tensor/elementwise_ops/gelu_node_test.cpp
     data_flow/library_nodes/math/tensor/elementwise_test.cpp
     data_flow/library_nodes/math/tensor/embedding_node_test.cpp

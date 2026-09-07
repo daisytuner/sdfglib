@@ -18,11 +18,11 @@
 #include <sdfg/codegen/instrumentation/arg_capture_plan.h>
 #include <sdfg/codegen/instrumentation/instrumentation_plan.h>
 #include <sdfg/codegen/loop_report.h>
+#include <sdfg/einsum/einsum.h>
 #include <sdfg/passes/dataflow/dead_data_elimination.h>
 #include <sdfg/passes/dataflow/local_buffer_reuse.h>
 #include <sdfg/passes/dataflow/tensor_to_pointer_conversion.h>
 #include <sdfg/passes/dot_expansion_pass.h>
-#include <sdfg/passes/einsum.h>
 #include <sdfg/passes/normalization/loop_normal_form.h>
 #include <sdfg/passes/normalization/normalization.h>
 #include <sdfg/passes/normalization/normalize.h>
@@ -180,11 +180,11 @@ void PyStructuredSDFG::einsum() {
     dataflow_simplification.run(builder_opt, analysis_manager);
 
     // Lift Einsum nodes to detect more library nodes (offloading)
-    sdfg::passes::EinsumDetectionPass einsum_detection_pass;
+    sdfg::einsum::EinsumDetectionPass einsum_detection_pass;
     einsum_detection_pass.run(builder_opt, analysis_manager);
 
     // Convert einsum into blas nodes (best-effort)
-    sdfg::passes::EinsumConversionPass einsum_conversion_pass;
+    sdfg::einsum::EinsumConversionPass einsum_conversion_pass;
     einsum_conversion_pass.run(builder_opt, analysis_manager);
     sdfg::passes::CompileStatistics::exit_stage_if_enabled();
 }
@@ -216,7 +216,7 @@ void PyStructuredSDFG::expand(const docc::target::TargetOptions& options) {
     // Special expansion for einsum, because it can cut blocks apart manually, and the new expansion is not capable of
     // doing that generically
     sdfg::passes::Pipeline einsum_expand_pipe("EinsumExpansion");
-    einsum_expand_pipe.register_pass<sdfg::passes::EinsumExpansionPass>();
+    einsum_expand_pipe.register_pass<sdfg::einsum::EinsumExpansionPass>();
     einsum_expand_pipe.run(builder_opt, analysis_manager);
 
     // Expand Math library nodes

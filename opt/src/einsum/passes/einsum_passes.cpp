@@ -1,21 +1,21 @@
-#include "sdfg/passes/einsum.h"
+#include "sdfg/einsum/passes/einsum_passes.h"
 
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/data_flow/library_node.h"
-#include "sdfg/data_flow/library_nodes/math/tensor/einsum_node.h"
+#include "sdfg/einsum/einsum_node.h"
+#include "sdfg/einsum/transformations/einsum2dot.h"
+#include "sdfg/einsum/transformations/einsum2gemm.h"
+#include "sdfg/einsum/transformations/einsum_extend.h"
+#include "sdfg/einsum/transformations/einsum_lift.h"
+#include "sdfg/einsum/transformations/einsum_promotion.h"
 #include "sdfg/exceptions.h"
 #include "sdfg/helpers/helpers.h"
 #include "sdfg/structured_control_flow/block.h"
-#include "sdfg/transformations/einsum2dot.h"
-#include "sdfg/transformations/einsum2gemm.h"
-#include "sdfg/transformations/einsum_extend.h"
-#include "sdfg/transformations/einsum_lift.h"
-#include "sdfg/transformations/einsum_promotion.h"
 #include "sdfg/visitor/structured_sdfg_visitor.h"
 
 namespace sdfg {
-namespace passes {
+namespace einsum {
 
 class BlockFinder : public visitor::NonStoppingStructuredSDFGVisitor {
 private:
@@ -45,7 +45,7 @@ bool EinsumDetectionPass::run_pass(builder::StructuredSDFGBuilder& builder, anal
     // Try lifting all available tasklets to einsum nodes and capture them
     bool applied = false;
     std::list<structured_control_flow::Block*> block_queue(block_finder.blocks());
-    std::unordered_set<math::tensor::EinsumNode*> einsum_nodes;
+    std::unordered_set<einsum::EinsumNode*> einsum_nodes;
     while (!block_queue.empty()) {
         structured_control_flow::Block* block = block_queue.front();
         block_queue.pop_front();
@@ -53,7 +53,7 @@ bool EinsumDetectionPass::run_pass(builder::StructuredSDFGBuilder& builder, anal
         // Find already existing einsum nodes
         auto libnodes = block->dataflow().library_nodes();
         for (auto* libnode : libnodes) {
-            if (auto* einsum_node = dynamic_cast<math::tensor::EinsumNode*>(libnode)) {
+            if (auto* einsum_node = dynamic_cast<einsum::EinsumNode*>(libnode)) {
                 einsum_nodes.insert(einsum_node);
             }
         }
@@ -61,7 +61,7 @@ bool EinsumDetectionPass::run_pass(builder::StructuredSDFGBuilder& builder, anal
         // Lift tasklets to einsum node as far as possible
         auto tasklets = block->dataflow().tasklets();
         for (auto* tasklet : tasklets) {
-            transformations::EinsumLift transformation(*tasklet);
+            EinsumLift transformation(*tasklet);
             if (transformation.can_be_applied(builder, analysis_manager)) {
                 transformation.apply(builder, analysis_manager);
                 DEBUG_PRINTLN("Applied " << transformation.name());
@@ -75,13 +75,13 @@ bool EinsumDetectionPass::run_pass(builder::StructuredSDFGBuilder& builder, anal
     }
 
     // Try extending all captured einsum nodes as much as possible
-    std::list<math::tensor::EinsumNode*> einsum_queue(einsum_nodes.begin(), einsum_nodes.end());
+    std::list<einsum::EinsumNode*> einsum_queue(einsum_nodes.begin(), einsum_nodes.end());
     while (!einsum_queue.empty()) {
-        math::tensor::EinsumNode* einsum_node = einsum_queue.front();
+        einsum::EinsumNode* einsum_node = einsum_queue.front();
         einsum_queue.pop_front();
 
         // Extend einsum node as far as possible
-        transformations::EinsumExtend transformation(*einsum_node);
+        EinsumExtend transformation(*einsum_node);
         if (transformation.can_be_applied(builder, analysis_manager)) {
             einsum_nodes.erase(einsum_node);
             transformation.apply(builder, analysis_manager);
@@ -97,10 +97,10 @@ bool EinsumDetectionPass::run_pass(builder::StructuredSDFGBuilder& builder, anal
 
     einsum_queue.insert(einsum_queue.end(), einsum_nodes.begin(), einsum_nodes.end());
     while (!einsum_queue.empty()) {
-        math::tensor::EinsumNode* einsum_node = einsum_queue.front();
+        einsum::EinsumNode* einsum_node = einsum_queue.front();
         einsum_queue.pop_front();
 
-        transformations::EinsumPromotion transformation(*einsum_node);
+        EinsumPromotion transformation(*einsum_node);
         if (transformation.can_be_applied(builder, analysis_manager)) {
             transformation.apply(builder, analysis_manager);
             DEBUG_PRINTLN("Applied " << transformation.name());
@@ -125,8 +125,8 @@ bool EinsumConversion::accept(structured_control_flow::Block& block) {
     bool applied = false;
 
     for (auto* libnode : block.dataflow().library_nodes()) {
-        if (auto* einsum_node = dynamic_cast<math::tensor::EinsumNode*>(libnode)) {
-            transformations::Einsum2Dot dot_transformation(*einsum_node);
+        if (auto* einsum_node = dynamic_cast<einsum::EinsumNode*>(libnode)) {
+            Einsum2Dot dot_transformation(*einsum_node);
             if (report_) {
                 dot_transformation.set_report(report_);
             }
@@ -138,7 +138,7 @@ bool EinsumConversion::accept(structured_control_flow::Block& block) {
                 continue;
             }
 
-            transformations::Einsum2Gemm gemm_transformation(*einsum_node);
+            Einsum2Gemm gemm_transformation(*einsum_node);
             if (report_) {
                 gemm_transformation.set_report(report_);
             }
@@ -160,7 +160,7 @@ EinsumLower::EinsumLower(builder::StructuredSDFGBuilder& builder, analysis::Anal
 
 bool EinsumLower::accept(structured_control_flow::Block& block) {
     for (auto* libnode : block.dataflow().library_nodes()) {
-        if (auto* einsum_node = dynamic_cast<math::tensor::EinsumNode*>(libnode)) {
+        if (auto* einsum_node = dynamic_cast<einsum::EinsumNode*>(libnode)) {
             if (einsum_node->expand(this->builder_, this->analysis_manager_)) {
                 DEBUG_PRINTLN("Applied EinsumLower");
                 return true;
@@ -184,8 +184,8 @@ bool EinsumExpansion::accept(structured_control_flow::Block& node) {
             continue;
         }
 
-        if (library_node->code() == math::tensor::LibraryNodeType_Einsum) {
-            auto enode = dynamic_cast<math::tensor::EinsumNode*>(library_node);
+        if (library_node->code() == LibraryNodeType_Einsum) {
+            auto enode = dynamic_cast<einsum::EinsumNode*>(library_node);
             if (enode->expand(this->builder_, this->analysis_manager_)) {
                 return true;
             }
@@ -194,5 +194,5 @@ bool EinsumExpansion::accept(structured_control_flow::Block& node) {
     return applied;
 }
 
-} // namespace passes
+} // namespace einsum
 } // namespace sdfg

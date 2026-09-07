@@ -7,6 +7,7 @@
 #include <mutex>
 
 #include <sdfg/codegen/dispatchers/node_dispatcher_registry.h>
+#include <sdfg/einsum/einsum.h>
 #include <sdfg/plugins/plugins.h>
 #include <sdfg/targets/cuda/plugin.h>
 #include <sdfg/targets/memory/plugin.h>
@@ -37,7 +38,7 @@ void register_sdfg_dispatchers() {
     std::call_once(dispatcher_registration_flag, []() {
         sdfg::codegen::register_default_dispatchers();
         sdfg::serializer::register_default_serializers();
-
+        sdfg::einsum::register_einsum_plugin();
         sdfg::omp::register_omp_plugin();
         sdfg::vectorize::register_vectorize_plugin();
         sdfg::cuda::register_cuda_plugin();
