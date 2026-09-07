@@ -45,7 +45,7 @@ void StructuredLoop::validate(const Function& function) const {
                 std::to_string(this->element_id())
             );
         }
-    } else if (indvar_type.type_id() != types::TypeID::Pointer) {
+    } else if (indvar_type.type_id() != types::TypeID::Pointer && indvar_type.type_id() != types::TypeID::Reference) {
         throw InvalidSDFGException(
             "StructuredLoop: Expressions must be signed Scalars or Ptr: '" + indvar->get_name() + "' is " +
             indvar_type.print() + " on #" + std::to_string(this->element_id())
