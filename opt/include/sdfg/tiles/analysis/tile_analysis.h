@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -14,13 +15,22 @@
 namespace sdfg {
 namespace tiles {
 
-/// Schedule-aware tile analysis: for every `(loop scope, container)` that
+/// Schedule-aware tile analysis: for a `(loop scope, container)` that
 /// MemoryLayoutAnalysis resolves to a bounded tile, produces a @ref tiles::Tile
 /// (geometry, thread/value partition, copy direction) for memory-level
 /// transformations to consume instead of re-deriving.
 class TileAnalysis : public analysis::Analysis {
 private:
-    std::map<std::pair<const structured_control_flow::ControlFlowNode*, std::string>, tiles::Tile> tiles_;
+    mutable std::map<std::pair<const structured_control_flow::ControlFlowNode*, std::string>, std::optional<tiles::Tile>>
+        tiles_;
+
+    /// The manager captured by @ref run, queried lazily for MemoryLayoutAnalysis.
+    analysis::AnalysisManager* analysis_manager_ = nullptr;
+
+    /// Resolve the tile for @p scope / @p container on demand (nullopt if @p scope
+    /// is not a loop or MemoryLayoutAnalysis forms no bounded tile there).
+    std::optional<tiles::Tile>
+    compute_tile(const structured_control_flow::ControlFlowNode& scope, const std::string& container) const;
 
 protected:
     void run(analysis::AnalysisManager& analysis_manager) override;

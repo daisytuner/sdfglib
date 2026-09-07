@@ -6,7 +6,6 @@
 #include <utility>
 
 #include "sdfg/analysis/base_user_visitor.h"
-#include "sdfg/analysis/loop_analysis.h"
 #include "sdfg/analysis/memory_layout_analysis.h"
 #include "sdfg/analysis/pointer_analyzers.h"
 #include "sdfg/data_flow/data_flow_graph.h"
@@ -160,31 +159,36 @@ TileAnalysis::AccessSummary TileAnalysis::
 }
 
 void TileAnalysis::run(analysis::AnalysisManager& analysis_manager) {
+    // Lazy/local model: no eager enumeration of loops x containers. Capture the
+    // manager and resolve each tile on demand in tile(), so cost scales with the
+    // queried subset (and follows MemoryLayoutAnalysis once it, too, is local).
     tiles_.clear();
-    auto& mla = analysis_manager.get<analysis::MemoryLayoutAnalysis>();
-    auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
+    analysis_manager_ = &analysis_manager;
+}
 
-    for (auto* node : loop_analysis.loops()) {
-        auto* loop = dynamic_cast<StructuredLoop*>(node);
-        if (loop == nullptr) {
-            continue;
-        }
-        for (const auto& container : sdfg_.containers()) {
-            const analysis::MemoryTile* mt = mla.tile(*loop, container);
-            if (mt == nullptr) {
-                continue;
-            }
-            auto tile = build_tile(sdfg_, *loop, container, *mt);
-            if (tile) {
-                tiles_.emplace(std::make_pair(node, container), std::move(*tile));
-            }
-        }
+std::optional<tiles::Tile> TileAnalysis::compute_tile(const ControlFlowNode& scope, const std::string& container) const {
+    if (analysis_manager_ == nullptr) {
+        return std::nullopt;
     }
+    auto* loop = dynamic_cast<StructuredLoop*>(const_cast<ControlFlowNode*>(&scope));
+    if (loop == nullptr) {
+        return std::nullopt;
+    }
+    auto& mla = analysis_manager_->get<analysis::MemoryLayoutAnalysis>();
+    const analysis::MemoryTile* mt = mla.tile(*loop, container);
+    if (mt == nullptr) {
+        return std::nullopt;
+    }
+    return build_tile(sdfg_, *loop, container, *mt);
 }
 
 const tiles::Tile* TileAnalysis::tile(const ControlFlowNode& scope, const std::string& container) const {
-    auto it = tiles_.find(std::make_pair(&scope, container));
-    return it == tiles_.end() ? nullptr : &it->second;
+    auto key = std::make_pair(&scope, container);
+    auto it = tiles_.find(key);
+    if (it == tiles_.end()) {
+        it = tiles_.emplace(std::move(key), compute_tile(scope, container)).first;
+    }
+    return it->second ? &*it->second : nullptr;
 }
 
 bool is_constant_bounded(const analysis::MemoryTileGroup* group) {
