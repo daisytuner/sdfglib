@@ -14,9 +14,9 @@ AxisSchedule::AxisSchedule(
     : level_(level), space_(space), has_scratchpad_(has_scratchpad), spatial_axis_(spatial_axis),
       parallel_size_(std::move(parallel_size)), needs_sync_(needs_sync) {}
 
-std::optional<AxisSchedule> AxisSchedule::classify(const structured_control_flow::ScheduleType& sched) {
+std::optional<AxisSchedule> TileTargetRegistry::classify(const structured_control_flow::ScheduleType& sched) const {
     // The target that owns this schedule value supplies the classification.
-    if (auto* target = TileTargetRegistry::instance().get(sched.value())) {
+    if (auto* target = get(sched.value())) {
         return target->classify(sched);
     }
     // No registered target: a sequential loop does not shape storage; any other
@@ -28,7 +28,7 @@ std::optional<AxisSchedule> AxisSchedule::classify(const structured_control_flow
     return AxisSchedule(Level::Device, Space::Global, /*has_scratchpad=*/false);
 }
 
-std::optional<Level> AxisSchedule::classify_level(const structured_control_flow::ScheduleType& sched) {
+std::optional<Level> TileTargetRegistry::classify_level(const structured_control_flow::ScheduleType& sched) const {
     auto schedule = classify(sched);
     if (schedule && schedule->has_scratchpad()) {
         return schedule->level();
@@ -36,9 +36,25 @@ std::optional<Level> AxisSchedule::classify_level(const structured_control_flow:
     return std::nullopt;
 }
 
-bool AxisSchedule::drives_cooperative_copy(const structured_control_flow::ScheduleType& sched) {
-    auto* target = TileTargetRegistry::instance().get(sched.value());
+bool TileTargetRegistry::drives_cooperative_copy(const structured_control_flow::ScheduleType& sched) const {
+    auto* target = get(sched.value());
     return target && target->supports_cooperative_staging(sched) && classify_level(sched) == Level::Group;
+}
+
+// The AxisSchedule::classify* statics resolve against the process-global registry.
+// They are the legacy default seam: a caller holding its own context's registry
+// should prefer the TileTargetRegistry methods above so classification follows that
+// context rather than the singleton.
+std::optional<AxisSchedule> AxisSchedule::classify(const structured_control_flow::ScheduleType& sched) {
+    return TileTargetRegistry::instance().classify(sched);
+}
+
+std::optional<Level> AxisSchedule::classify_level(const structured_control_flow::ScheduleType& sched) {
+    return TileTargetRegistry::instance().classify_level(sched);
+}
+
+bool AxisSchedule::drives_cooperative_copy(const structured_control_flow::ScheduleType& sched) {
+    return TileTargetRegistry::instance().drives_cooperative_copy(sched);
 }
 
 TileAxis::TileAxis(

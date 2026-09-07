@@ -7,6 +7,7 @@
 #include "sdfg/codegen/dispatchers/node_dispatcher_registry.h"
 #include "sdfg/passes/scheduler/omp_scheduler.h"
 #include "sdfg/passes/scheduler/scheduler_registry.h"
+#include "sdfg/plugins/plugins.h"
 #include "sdfg/targets/omp/codegen/omp_map_dispatcher.h"
 #include "sdfg/targets/omp/schedule.h"
 #include "sdfg/tiles/tile_target_registry.h"
@@ -36,8 +37,8 @@ public:
     unsigned lane_width() const override { return 1; }
 };
 
-inline void register_omp_plugin() {
-    codegen::MapDispatcherRegistry::instance().register_map_dispatcher(
+inline void register_omp_plugin(plugins::Context& context) {
+    context.map_dispatcher_registry.register_map_dispatcher(
         ScheduleType_OMP::value(),
         [](codegen::LanguageExtension& language_extension,
            StructuredSDFG& sdfg,
@@ -51,10 +52,15 @@ inline void register_omp_plugin() {
         }
     );
 
-    passes::scheduler::SchedulerRegistry::instance()
+    context.scheduler_registry
         .register_loop_scheduler<passes::scheduler::OMPScheduler>(passes::scheduler::OMPScheduler::target());
 
-    tiles::TileTargetRegistry::instance().register_target(ScheduleType_OMP::value(), std::make_shared<OMPTileTarget>());
+    context.tile_target_registry.register_target(ScheduleType_OMP::value(), std::make_shared<OMPTileTarget>());
+}
+
+inline void register_omp_plugin() {
+    auto ctx = plugins::Context::global_context();
+    register_omp_plugin(ctx);
 }
 
 } // namespace omp

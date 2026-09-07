@@ -21,8 +21,8 @@ void register_rocm_plugin(plugins::Context& context) {
     // The tile algebra's view of ROCm: 64-wide wavefront + level/storage mapping,
     // shared under both the legacy and the offload schedule value.
     auto rocm_tile_target = std::make_shared<tiles::GPUTileTarget>(ROCM_WARP_SIZE, ScheduleType_ROCM_Offload::value());
-    tiles::TileTargetRegistry::instance().register_target(ScheduleType_ROCM::value(), rocm_tile_target);
-    tiles::TileTargetRegistry::instance().register_target(ScheduleType_ROCM_Offload::value(), rocm_tile_target);
+    context.tile_target_registry.register_target(ScheduleType_ROCM::value(), rocm_tile_target);
+    context.tile_target_registry.register_target(ScheduleType_ROCM_Offload::value(), rocm_tile_target);
 
     mapDispatcherRegistry.register_map_dispatcher(
         ScheduleType_ROCM::value(),

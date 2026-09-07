@@ -39,6 +39,20 @@ public:
         auto it = targets_.find(schedule_value);
         return it == targets_.end() ? nullptr : it->second.get();
     }
+
+    /// Classify @p sched into cooperation facts via the owning target, or the
+    /// neutral fallback when none is registered (`std::nullopt` for a sequential
+    /// loop, else device-wide global cooperation without a scratchpad). This is
+    /// the classification seam a caller reaches through its own context's registry.
+    std::optional<AxisSchedule> classify(const structured_control_flow::ScheduleType& sched) const;
+
+    /// The cooperation @ref Level for @p sched, or `std::nullopt` when no registered
+    /// target treats it as a scratchpad (device-parallel) schedule.
+    std::optional<Level> classify_level(const structured_control_flow::ScheduleType& sched) const;
+
+    /// True when @p sched is a group-level schedule whose parallel threads can drive
+    /// a cooperative shared-memory staging copy (a genuine offload schedule).
+    bool drives_cooperative_copy(const structured_control_flow::ScheduleType& sched) const;
 };
 
 } // namespace tiles

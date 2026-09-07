@@ -22,8 +22,8 @@ void register_cuda_plugin(plugins::Context& context) {
     // The tile algebra's view of CUDA: warp width + level/storage mapping, shared
     // under both the legacy and the offload schedule value.
     auto cuda_tile_target = std::make_shared<tiles::GPUTileTarget>(CUDA_WARP_SIZE, ScheduleType_CUDA_Offload::value());
-    tiles::TileTargetRegistry::instance().register_target(ScheduleType_CUDA::value(), cuda_tile_target);
-    tiles::TileTargetRegistry::instance().register_target(ScheduleType_CUDA_Offload::value(), cuda_tile_target);
+    context.tile_target_registry.register_target(ScheduleType_CUDA::value(), cuda_tile_target);
+    context.tile_target_registry.register_target(ScheduleType_CUDA_Offload::value(), cuda_tile_target);
 
     mapDispatcherRegistry.register_map_dispatcher(
         ScheduleType_CUDA::value(),

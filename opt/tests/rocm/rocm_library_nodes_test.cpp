@@ -200,7 +200,8 @@ TEST(RocBlasTest, GemmNodeWithoutDataTransfers_DoublePrecisionNoThrow) {
         codegen::MapDispatcherRegistry::instance(),
         codegen::ReduceDispatcherRegistry::instance(),
         local_registry,
-        passes::scheduler::SchedulerRegistry::instance()
+        passes::scheduler::SchedulerRegistry::instance(),
+        tiles::TileTargetRegistry::instance()
     };
     rocm::register_rocm_plugin(ctx);
 
@@ -270,7 +271,8 @@ TEST(RocBlasTest, GemmNodeWithoutDataTransfers_SinglePrecisionUsesHandTuned) {
         codegen::MapDispatcherRegistry::instance(),
         codegen::ReduceDispatcherRegistry::instance(),
         local_registry,
-        passes::scheduler::SchedulerRegistry::instance()
+        passes::scheduler::SchedulerRegistry::instance(),
+        tiles::TileTargetRegistry::instance()
     };
     rocm::register_rocm_plugin(ctx);
 
