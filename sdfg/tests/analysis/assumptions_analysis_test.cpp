@@ -1115,3 +1115,110 @@ TEST(AssumptionsAnalysisTest, TileNest_StrideTightAndCoupledConstraintEnableProo
         true
     )) << "`3 + i < 64 + it` must be provable from the tile assumptions.";
 }
+
+// Int32 indvar variant of StreamK_AffineWorker_TileBaseBounded. The migration of
+// loop indvars from UInt64 -> Int32 seeds a type-derived lower bound of INT32_MIN
+// (a prunable sentinel) instead of UInt's real 0. The Stream-K tile base
+// 64*imod(idiv(t,16),16) must still bound to [0,960] and the block-map trip must
+// still collapse to the constant 16 (== parallel_size) so the copy guard drops.
+// If this regresses, the always-true copy guards survive and the kernel slows.
+TEST(AssumptionsAnalysisTest, StreamK_AffineWorker_TileBaseBounded_Int32) {
+    builder::StructuredSDFGBuilder builder("sk_aff_i32", FunctionType_CPU);
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+    types::Scalar i32(types::PrimitiveType::Int32);
+    builder.add_container("bid", i32);
+    builder.add_container("t", i32);
+
+    auto bid = symbolic::symbol("bid");
+    auto t = symbolic::symbol("t");
+    auto total = symbolic::integer(4096);
+    auto NB = symbolic::integer(336);
+    auto one = symbolic::integer(1);
+    auto p16 = symbolic::integer(16);
+
+    auto& mbid = builder.add_for(root, bid, symbolic::Lt(bid, NB), symbolic::integer(0), symbolic::add(bid, one));
+    auto iter_end = symbolic::div(symbolic::mul(symbolic::add(bid, one), total), NB);
+    auto t_begin = symbolic::div(symbolic::div(symbolic::mul(bid, total), NB), p16);
+    auto& ft =
+        builder.add_for(mbid.root(), t, symbolic::Lt(symbolic::mul(p16, t), iter_end), t_begin, symbolic::add(t, one));
+    auto& block = builder.add_block(ft.root());
+
+    analysis::AnalysisManager am(sdfg);
+    auto& aa = am.get<analysis::AssumptionsAnalysis>();
+    auto& assums = aa.get(block, true);
+
+    auto base_i = symbolic::mul(symbolic::integer(64), symbolic::mod(t, p16));
+    auto base_j = symbolic::mul(symbolic::integer(64), symbolic::mod(symbolic::div(t, p16), p16));
+    auto mx_i = symbolic::maximum(base_i, aa.parameters(), assums, true);
+    auto mx_j = symbolic::maximum(base_j, aa.parameters(), assums, true);
+    EXPECT_FALSE(mx_i.is_null()) << "64*imod(t,16) unbounded for Int32 t";
+    EXPECT_FALSE(mx_j.is_null()) << "64*imod(idiv(t,16),16) unbounded for Int32 t";
+
+    for (auto base : {base_i, base_j}) {
+        auto trip = symbolic::
+            div(symbolic::sub(symbolic::min(symbolic::integer(1024), symbolic::add(symbolic::integer(64), base)), base),
+                symbolic::integer(4));
+        auto tmx = symbolic::maximum(trip, aa.parameters(), assums, true);
+        auto tmn = symbolic::minimum(trip, aa.parameters(), assums, true);
+        ASSERT_FALSE(tmx.is_null());
+        ASSERT_FALSE(tmn.is_null());
+        EXPECT_TRUE(symbolic::eq(tmx, symbolic::integer(16))) << "trip max = " << tmx->__str__();
+        EXPECT_TRUE(symbolic::eq(tmn, symbolic::integer(16))) << "trip min = " << tmn->__str__();
+    }
+}
+
+// Int32 variant of StreamK_AffineWorker_NestedStoreGuardDischarges: the actual
+// emitted copy/store guard `_j1 + d <= min(1023, min(3+_j1, 63+base))` on Int32
+// indvars. This is the guard whose survival slows the CUDA kernel.
+TEST(AssumptionsAnalysisTest, StreamK_AffineWorker_NestedStoreGuardDischarges_Int32) {
+    builder::StructuredSDFGBuilder builder("sk_nest_i32", FunctionType_CPU);
+    auto& sdfg = builder.subject();
+    auto& root = sdfg.root();
+    types::Scalar i32(types::PrimitiveType::Int32);
+    builder.add_container("bid", i32);
+    builder.add_container("t", i32);
+    builder.add_container("_j1", i32);
+    builder.add_container("d", i32);
+
+    auto bid = symbolic::symbol("bid");
+    auto t = symbolic::symbol("t");
+    auto j1 = symbolic::symbol("_j1");
+    auto d = symbolic::symbol("d");
+    auto total = symbolic::integer(4096);
+    auto NB = symbolic::integer(336);
+    auto one = symbolic::integer(1);
+    auto p16 = symbolic::integer(16);
+
+    auto& mbid = builder.add_for(root, bid, symbolic::Lt(bid, NB), symbolic::integer(0), symbolic::add(bid, one));
+    auto iter_end = symbolic::div(symbolic::mul(symbolic::add(bid, one), total), NB);
+    auto t_begin = symbolic::div(symbolic::div(symbolic::mul(bid, total), NB), p16);
+    auto& ft =
+        builder.add_for(mbid.root(), t, symbolic::Lt(symbolic::mul(p16, t), iter_end), t_begin, symbolic::add(t, one));
+    auto base = symbolic::mul(symbolic::integer(64), symbolic::mod(symbolic::div(t, p16), p16));
+    auto& mj = builder.add_for(
+        ft.root(),
+        j1,
+        symbolic::Lt(j1, symbolic::min(symbolic::integer(1024), symbolic::add(symbolic::integer(64), base))),
+        base,
+        symbolic::add(j1, symbolic::integer(4))
+    );
+    auto& md =
+        builder
+            .add_for(mj.root(), d, symbolic::Lt(d, symbolic::integer(4)), symbolic::integer(0), symbolic::add(d, one));
+    auto& block = builder.add_block(md.root());
+
+    analysis::AnalysisManager am(sdfg);
+    auto& aa = am.get<analysis::AssumptionsAnalysis>();
+    auto& assums = aa.get(block, true);
+    const auto& params = aa.parameters();
+
+    auto global_d = symbolic::add(j1, d);
+    auto maxreg = symbolic::add(symbolic::integer(3), j1);
+    auto maxpanel = symbolic::add(symbolic::integer(63), base);
+    auto maxes = symbolic::min(symbolic::integer(1023), symbolic::min(maxreg, maxpanel));
+
+    EXPECT_TRUE(symbolic::is_le(global_d, maxreg, params, assums, true)) << "vs 3+_j1 failed (Int32)";
+    EXPECT_TRUE(symbolic::is_le(global_d, maxpanel, params, assums, true)) << "vs 63+base failed (Int32)";
+    EXPECT_TRUE(symbolic::is_le(global_d, maxes, params, assums, true)) << "vs full min() failed (Int32)";
+}

@@ -2606,6 +2606,89 @@ TEST(LocalStorageTest, Apply_LaneContiguous_FlatStaging) {
 }
 
 /**
+ * Apply_Cooperative_2DTile_FullTile_NoGuard: a fully-covering cooperative copy of
+ * a 2D tile. Flattening the tile onto a single coverage sweep makes each per-dim
+ * copy coordinate a non-symbol idiv/imod of the coverage indvar, which
+ * build_copy_discharge_assumptions cannot pin. boundary_guard must still discharge
+ * the interior element predicate (via the worst-case coordinate base+(size-1),
+ * which is fully-covering and index-independent). A regression leaves the
+ * trivially-true guard in place and blocks vectorization of the copy.
+ */
+TEST(LocalStorageTest, Apply_Cooperative_2DTile_FullTile_NoGuard) {
+    builder::StructuredSDFGBuilder builder("ls_coop_2d_noguard", FunctionType_CPU);
+    auto& seq = builder.subject().root();
+    types::Scalar loop_var(types::PrimitiveType::Int32);
+    types::Scalar elem(types::PrimitiveType::Float);
+    types::Pointer ptr(elem);
+    auto b = symbolic::symbol("b");
+    auto i = symbolic::symbol("i");
+    auto k = symbolic::symbol("k");
+    auto N = symbolic::symbol("N");
+    builder.add_container("N", loop_var, true);
+    builder.add_container("A", ptr, true);
+    builder.add_container("C", ptr, true);
+    builder.add_container("b", loop_var);
+    builder.add_container("i", loop_var);
+    builder.add_container("k", loop_var);
+
+    auto sched_b = gpu::ScheduleType_GPU_Offload::create<
+        cuda::ScheduleType_CUDA_Offload>(gpu::TargetLevel::X_BLOCK, symbolic::integer(32));
+    auto& map_b =
+        builder
+            .add_map(seq, b, symbolic::Lt(b, N), symbolic::integer(0), symbolic::add(b, symbolic::integer(1)), sched_b);
+    // A tile is 2D: i in [0,4), k in [0,32), both enclosed and cooperatively staged.
+    auto& loop_i = builder.add_for(
+        map_b.root(),
+        i,
+        symbolic::Lt(i, symbolic::integer(4)),
+        symbolic::integer(0),
+        symbolic::add(i, symbolic::integer(1))
+    );
+    auto& loop_k = builder.add_for(
+        loop_i.root(),
+        k,
+        symbolic::Lt(k, symbolic::integer(32)),
+        symbolic::integer(0),
+        symbolic::add(k, symbolic::integer(1))
+    );
+
+    // C[b] += A[i*32 + k] — A independent of the block dim b (cooperative), 2D in (i,k).
+    auto& block = builder.add_block(loop_k.root());
+    auto& c_in = builder.add_access(block, "C");
+    auto& a_in = builder.add_access(block, "A");
+    auto& c_out = builder.add_access(block, "C");
+    auto& t = builder.add_tasklet(block, data_flow::TaskletCode::fp_add, "_out", {"_in1", "_in2"});
+    builder.add_computational_memlet(block, c_in, t, "_in1", {b}, ptr);
+    builder
+        .add_computational_memlet(block, a_in, t, "_in2", {symbolic::add(symbolic::mul(i, symbolic::integer(32)), k)}, ptr);
+    builder.add_computational_memlet(block, t, "_out", c_out, {b}, ptr);
+
+    analysis::AnalysisManager am(builder.subject());
+    LocalStorage xform(loop_i, a_in);
+    ASSERT_TRUE(xform.can_be_applied(builder, am));
+    xform.apply(builder, am);
+
+    // No copy in the staged region may be wrapped in a boundary-guard IfElse: the
+    // fully-covering 2D tile discharges the element predicate.
+    size_t guards = 0;
+    std::function<void(structured_control_flow::ControlFlowNode&)> count =
+        [&](structured_control_flow::ControlFlowNode& n) {
+            if (dynamic_cast<structured_control_flow::IfElse*>(&n)) {
+                guards++;
+            }
+            if (auto* s = dynamic_cast<structured_control_flow::Sequence*>(&n)) {
+                for (size_t x = 0; x < s->size(); ++x) count(s->at(x));
+            } else if (auto* m = dynamic_cast<structured_control_flow::Map*>(&n)) {
+                count(m->root());
+            } else if (auto* f = dynamic_cast<structured_control_flow::StructuredLoop*>(&n)) {
+                count(f->root());
+            }
+        };
+    count(map_b.root());
+    EXPECT_EQ(guards, 0u) << "fully-covering cooperative 2D copy must not be boundary-guarded";
+}
+
+/**
  * Apply_Cooperative_Mixed_CoopOuter: the 2D-block GEMM shape. The tile is
  * cooperative along the OUTER GPU block dim (j) and per-thread along the INNER,
  * immediately-enclosing dim (i). This is exactly what LocalStorage v1 rejected
