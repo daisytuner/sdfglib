@@ -10,9 +10,9 @@
 #include "sdfg/visitor/structured_sdfg_visitor.h"
 
 namespace sdfg {
-namespace passes {
+namespace einsum {
 
-class EinsumDetectionPass : public Pass {
+class EinsumDetectionPass : public passes::Pass {
 public:
     virtual std::string name() override { return "EinsumDetectionPass"; }
 
@@ -21,13 +21,13 @@ public:
 
 class EinsumConversion : public visitor::NonStoppingStructuredSDFGVisitor {
 private:
-    sdfg::PassReportConsumer* report_;
+    PassReportConsumer* report_;
 
 public:
     EinsumConversion(
         builder::StructuredSDFGBuilder& builder,
         analysis::AnalysisManager& analysis_manager,
-        sdfg::PassReportConsumer* report = nullptr
+        PassReportConsumer* report = nullptr
     );
 
     static std::string name() { return "EinsumConversion"; }
@@ -35,7 +35,7 @@ public:
     virtual bool accept(structured_control_flow::Block& block) override;
 };
 
-typedef VisitorPass<EinsumConversion> EinsumConversionPass;
+typedef passes::VisitorPass<EinsumConversion> EinsumConversionPass;
 
 class EinsumLower : public visitor::StructuredSDFGVisitor {
 public:
@@ -46,7 +46,7 @@ public:
     virtual bool accept(structured_control_flow::Block& block) override;
 };
 
-typedef VisitorPass<EinsumLower> EinsumLowerPass;
+typedef passes::VisitorPass<EinsumLower> EinsumLowerPass;
 
 /**
  * @class EinsumExpansion
@@ -88,7 +88,7 @@ public:
  * @typedef EinsumExpansionPass
  * @brief Pass wrapper for the EinsumExpansion visitor
  */
-typedef VisitorPass<EinsumExpansion> EinsumExpansionPass;
+typedef passes::VisitorPass<EinsumExpansion> EinsumExpansionPass;
 
-} // namespace passes
+} // namespace einsum
 } // namespace sdfg

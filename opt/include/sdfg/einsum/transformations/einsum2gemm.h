@@ -6,18 +6,21 @@
 #include "sdfg/analysis/analysis.h"
 #include "sdfg/builder/structured_sdfg_builder.h"
 #include "sdfg/data_flow/library_node.h"
-#include "sdfg/data_flow/library_nodes/math/tensor/einsum_node.h"
+#include "sdfg/einsum/einsum_node.h"
+#include "sdfg/symbolic/symbolic.h"
 #include "sdfg/transformations/transformation.h"
 
 namespace sdfg {
-namespace transformations {
+namespace einsum {
 
-class Einsum2Dot : public Transformation {
+class Einsum2Gemm : public transformations::Transformation {
 private:
-    math::tensor::EinsumNode& einsum_node_;
+    EinsumNode& einsum_node_;
+
+    bool check_matrix_indices(long long mat, const symbolic::Symbol& indvar1, const symbolic::Symbol& indvar2);
 
 public:
-    Einsum2Dot(math::tensor::EinsumNode& einsum_node);
+    Einsum2Gemm(EinsumNode& einsum_node);
 
     virtual std::string name() const override;
 
@@ -28,8 +31,8 @@ public:
 
     virtual void to_json(nlohmann::json& j) const override;
 
-    static Einsum2Dot from_json(builder::StructuredSDFGBuilder& builder, const nlohmann::json& j);
+    static Einsum2Gemm from_json(builder::StructuredSDFGBuilder& builder, const nlohmann::json& j);
 };
 
-} // namespace transformations
+} // namespace einsum
 } // namespace sdfg

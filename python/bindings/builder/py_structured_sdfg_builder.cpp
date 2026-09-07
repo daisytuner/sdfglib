@@ -1,6 +1,7 @@
 #include "py_structured_sdfg_builder.h"
 #include <memory>
 #include <sdfg/data_flow/tasklet.h>
+#include <sdfg/einsum/einsum.h>
 #include <sdfg/structured_control_flow/map.h>
 #include <sdfg/symbolic/symbolic.h>
 #include <sstream>
@@ -18,7 +19,6 @@
 #include "sdfg/data_flow/library_nodes/math/tensor/arange_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/broadcast_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/conv_node.h"
-#include "sdfg/data_flow/library_nodes/math/tensor/einsum_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/cast_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/cmath_node.h"
 #include "sdfg/data_flow/library_nodes/math/tensor/elementwise_ops/logical_not_node.h"
@@ -2184,9 +2184,9 @@ void PyStructuredSDFGBuilder::add_einsum(
     auto& block = builder_.add_block(parent, {}, debug_info);
 
     // Build EinsumDimension vector
-    std::vector<sdfg::math::tensor::EinsumDimension> einsum_dims;
+    std::vector<sdfg::einsum::EinsumDimension> einsum_dims;
     for (const auto& [indvar_str, init_str, bound_str] : dims) {
-        sdfg::math::tensor::EinsumDimension dim;
+        sdfg::einsum::EinsumDimension dim;
         dim.indvar = sdfg::symbolic::symbol(indvar_str);
         dim.init = parse_and_expand(init_str);
         dim.bound = parse_and_expand(bound_str);
@@ -2216,9 +2216,9 @@ void PyStructuredSDFGBuilder::add_einsum(
 
     // Create the EinsumNode
     auto& einsum_node = builder_.add_library_node<
-        sdfg::math::tensor::EinsumNode,
+        sdfg::einsum::EinsumNode,
         const std::vector<std::string>&,
-        const std::vector<sdfg::math::tensor::EinsumDimension>&,
+        const std::vector<sdfg::einsum::EinsumDimension>&,
         const sdfg::data_flow::Subset&,
         const std::vector<sdfg::data_flow::Subset>&>(block, debug_info, in_conns, einsum_dims, out_subset, in_subsets);
 

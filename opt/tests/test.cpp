@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "sdfg/codegen/dispatchers/node_dispatcher_registry.h"
+#include "sdfg/einsum/einsum.h"
 #include "sdfg/serializer/json_serializer.h"
 #include "sdfg/targets/cuda/plugin.h"
 #include "sdfg/targets/omp/plugin.h"
@@ -16,12 +17,12 @@ int main(int argc, char** argv) {
     testing::InitGoogleTest(&argc, argv);
     auto context = sdfg::plugins::Context::global_context();
     sdfg::codegen::register_default_dispatchers();
-    sdfg::cuda::register_cuda_plugin(context);
-    sdfg::rocm::register_rocm_plugin(context);
     sdfg::serializer::register_default_serializers();
+    sdfg::einsum::register_einsum_plugin();
     sdfg::vectorize::register_vectorize_plugin();
     sdfg::omp::register_omp_plugin();
-
+    sdfg::cuda::register_cuda_plugin(context);
+    sdfg::rocm::register_rocm_plugin(context);
 
 #ifdef DOCC_TESTS_ENABLE_DUMP
     test_output_dir = std::filesystem::current_path() / "test_outputs";

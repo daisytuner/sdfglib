@@ -1712,12 +1712,6 @@ void register_default_serializers() {
         .register_library_node_serializer(math::tensor::LibraryNodeType_Std.value(), []() {
             return std::make_unique<math::tensor::StdNodeSerializer>();
         });
-
-    // Einsum
-    LibraryNodeSerializerRegistry::instance()
-        .register_library_node_serializer(math::tensor::LibraryNodeType_Einsum.value(), []() {
-            return std::make_unique<math::tensor::EinsumSerializer>();
-        });
 }
 
 } // namespace serializer

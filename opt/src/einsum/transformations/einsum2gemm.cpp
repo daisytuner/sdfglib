@@ -1,4 +1,4 @@
-#include "sdfg/transformations/einsum2gemm.h"
+#include "sdfg/einsum/transformations/einsum2gemm.h"
 
 #include <algorithm>
 #include <cassert>
@@ -13,7 +13,6 @@
 #include "sdfg/data_flow/library_node.h"
 #include "sdfg/data_flow/library_nodes/math/blas/gemm_node.h"
 #include "sdfg/data_flow/library_nodes/math/math.h"
-#include "sdfg/data_flow/library_nodes/math/tensor/einsum_node.h"
 #include "sdfg/symbolic/symbolic.h"
 #include "sdfg/transformations/transformation.h"
 #include "sdfg/types/scalar.h"
@@ -21,7 +20,7 @@
 #include "symengine/symengine_rcp.h"
 
 namespace sdfg {
-namespace transformations {
+namespace einsum {
 
 bool Einsum2Gemm::check_matrix_indices(long long mat, const symbolic::Symbol& indvar1, const symbolic::Symbol& indvar2) {
     return !symbolic::eq(this->einsum_node_.in_index(mat, 0), this->einsum_node_.in_index(mat, 1)) &&
@@ -31,7 +30,7 @@ bool Einsum2Gemm::check_matrix_indices(long long mat, const symbolic::Symbol& in
             symbolic::eq(this->einsum_node_.in_index(mat, 1), indvar2));
 }
 
-Einsum2Gemm::Einsum2Gemm(math::tensor::EinsumNode& einsum_node) : einsum_node_(einsum_node) {}
+Einsum2Gemm::Einsum2Gemm(einsum::EinsumNode& einsum_node) : einsum_node_(einsum_node) {}
 
 std::string Einsum2Gemm::name() const { return "Einsum2Gemm"; }
 
@@ -354,13 +353,13 @@ Einsum2Gemm Einsum2Gemm::from_json(builder::StructuredSDFGBuilder& builder, cons
     size_t einsum_node_id = j["einsum_node_element_id"].get<size_t>();
     auto* einsum_node_element = builder.find_element_by_id(einsum_node_id);
     if (!einsum_node_element) {
-        throw InvalidTransformationDescriptionException(
+        throw transformations::InvalidTransformationDescriptionException(
             "Element with ID " + std::to_string(einsum_node_id) + " not found"
         );
     }
-    auto* einsum_node = dynamic_cast<math::tensor::EinsumNode*>(einsum_node_element);
+    auto* einsum_node = dynamic_cast<einsum::EinsumNode*>(einsum_node_element);
     if (!einsum_node) {
-        throw InvalidTransformationDescriptionException(
+        throw transformations::InvalidTransformationDescriptionException(
             "Element with ID " + std::to_string(einsum_node_id) + " is not an EinsumNode"
         );
     }
@@ -368,5 +367,5 @@ Einsum2Gemm Einsum2Gemm::from_json(builder::StructuredSDFGBuilder& builder, cons
     return Einsum2Gemm(*einsum_node);
 }
 
-} // namespace transformations
+} // namespace einsum
 } // namespace sdfg

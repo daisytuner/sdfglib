@@ -40,6 +40,7 @@
 #include <sdfg/types/type.h>
 
 #include <sdfg/codegen/dispatchers/node_dispatcher_registry.h>
+#include <sdfg/einsum/einsum.h>
 #include <sdfg/passes/expansion/library_node_expansion_pass.h>
 #include <sdfg/plugins/plugins.h>
 #include <sdfg/serializer/json_serializer.h>
@@ -87,6 +88,7 @@ PYBIND11_MODULE(_sdfg, m) {
     sdfg::codegen::register_default_dispatchers();
     sdfg::serializer::register_default_serializers();
     sdfg::passes::register_core_passes(docc_context);
+    sdfg::einsum::register_einsum_plugin();
     sdfg::omp::register_omp_plugin();
     sdfg::vectorize::register_vectorize_plugin();
     sdfg::cuda::register_cuda_plugin(docc_context);

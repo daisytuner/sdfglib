@@ -1,4 +1,4 @@
-#include "sdfg/data_flow/library_nodes/math/tensor/einsum_node.h"
+#include "sdfg/einsum/einsum_node.h"
 
 #include <gtest/gtest.h>
 #include <nlohmann/json_fwd.hpp>
@@ -56,9 +56,9 @@ TEST(EinsumNodeTest, SimpleGEMM) {
     auto& C1 = builder.add_access(block, "C");
     auto& C2 = builder.add_access(block, "C");
     auto& libnode = builder.add_library_node<
-        math::tensor::EinsumNode,
+        einsum::EinsumNode,
         const std::vector<std::string>&,
-        const std::vector<math::tensor::EinsumDimension>&,
+        const std::vector<einsum::EinsumDimension>&,
         const data_flow::Subset&,
         const std::vector<data_flow::Subset>&>(
         block, DebugInfo(), {"_in1", "_in2"}, {{i, zero, l}, {j, zero, m}, {k, zero, n}}, {i, j}, {{i, k}, {k, j}}
@@ -77,7 +77,7 @@ TEST(EinsumNodeTest, SimpleGEMM) {
     symbolic::Symbol dim_k = symbolic::symbol("_einsum_node_" + std::to_string(einsum_id) + "_k");
 
     // Check
-    auto* einsum_node = dynamic_cast<math::tensor::EinsumNode*>(&libnode);
+    auto* einsum_node = dynamic_cast<einsum::EinsumNode*>(&libnode);
     ASSERT_TRUE(einsum_node);
 
     EXPECT_EQ(einsum_node->dims().size(), 3);
@@ -168,9 +168,9 @@ TEST(EinsumNodeTest, ExpandGEMM) {
     auto& C1 = builder.add_access(block, "C");
     auto& C2 = builder.add_access(block, "C");
     auto& libnode = builder.add_library_node<
-        math::tensor::EinsumNode,
+        einsum::EinsumNode,
         const std::vector<std::string>&,
-        const std::vector<math::tensor::EinsumDimension>&,
+        const std::vector<einsum::EinsumDimension>&,
         const data_flow::Subset&,
         const std::vector<data_flow::Subset>&>(
         block, DebugInfo(), {"_in1", "_in2"}, {{i, zero, l}, {j, zero, m}, {k, zero, n}}, {i, j}, {{i, k}, {k, j}}
@@ -183,7 +183,7 @@ TEST(EinsumNodeTest, ExpandGEMM) {
     dump_sdfg(sdfg, "0.before");
 
     // Check
-    auto* einsum_node = dynamic_cast<math::tensor::EinsumNode*>(&libnode);
+    auto* einsum_node = dynamic_cast<einsum::EinsumNode*>(&libnode);
     ASSERT_TRUE(einsum_node);
 
     analysis::AnalysisManager analysis_manager(builder.subject());
@@ -312,9 +312,9 @@ TEST(EinsumNodeTest, SimpleMeans) {
     auto& y_sum1 = builder.add_access(block_sum, "y");
     auto& y_sum2 = builder.add_access(block_sum, "y");
     auto& libnode = builder.add_library_node<
-        math::tensor::EinsumNode,
+        einsum::EinsumNode,
         const std::vector<std::string>&,
-        const std::vector<math::tensor::EinsumDimension>&,
+        const std::vector<einsum::EinsumDimension>&,
         const data_flow::Subset&,
         const std::vector<
             data_flow::Subset>&>(block_sum, DebugInfo(), {"_in"}, {{i, zero, m}, {j, zero, n}}, {i}, {{i, j}});
@@ -343,7 +343,7 @@ TEST(EinsumNodeTest, SimpleMeans) {
     symbolic::Symbol dim_j = symbolic::symbol("_einsum_node_" + std::to_string(einsum_id) + "_j");
 
     // Check
-    auto* einsum_node = dynamic_cast<math::tensor::EinsumNode*>(&libnode);
+    auto* einsum_node = dynamic_cast<einsum::EinsumNode*>(&libnode);
     ASSERT_TRUE(einsum_node);
 
     EXPECT_EQ(einsum_node->dims().size(), 2);
@@ -432,9 +432,9 @@ TEST(EinsumNodeTest, ExpandMeans) {
     auto& y_sum1 = builder.add_access(block_sum, "y");
     auto& y_sum2 = builder.add_access(block_sum, "y");
     auto& libnode = builder.add_library_node<
-        math::tensor::EinsumNode,
+        einsum::EinsumNode,
         const std::vector<std::string>&,
-        const std::vector<math::tensor::EinsumDimension>&,
+        const std::vector<einsum::EinsumDimension>&,
         const data_flow::Subset&,
         const std::vector<
             data_flow::Subset>&>(block_sum, DebugInfo(), {"_in"}, {{i, zero, m}, {j, zero, n}}, {i}, {{i, j}});
@@ -458,7 +458,7 @@ TEST(EinsumNodeTest, ExpandMeans) {
     builder.add_computational_memlet(block_div, tasklet_div2, "_out", y_div2, {i});
 
     // Check
-    auto* einsum_node = dynamic_cast<math::tensor::EinsumNode*>(&libnode);
+    auto* einsum_node = dynamic_cast<einsum::EinsumNode*>(&libnode);
     ASSERT_TRUE(einsum_node);
 
     analysis::AnalysisManager analysis_manager(builder.subject());
@@ -572,9 +572,9 @@ TEST(EinsumNodeTest, SimpleMean) {
 
     // ... summation
     auto& libnode = builder.add_library_node<
-        math::tensor::EinsumNode,
+        einsum::EinsumNode,
         const std::vector<std::string>&,
-        const std::vector<math::tensor::EinsumDimension>&,
+        const std::vector<einsum::EinsumDimension>&,
         const data_flow::Subset&,
         const std::vector<data_flow::Subset>&>(block, DebugInfo(), {"_in"}, {{i, zero, m}}, {}, {{i}});
     builder.add_computational_memlet(block, a_sum, libnode, "_in", {}, desc);
@@ -594,7 +594,7 @@ TEST(EinsumNodeTest, SimpleMean) {
     auto dim_i = symbolic::symbol("_einsum_node_" + std::to_string(einsum_id) + "_i");
 
     // Check
-    auto* einsum_node = dynamic_cast<math::tensor::EinsumNode*>(&libnode);
+    auto* einsum_node = dynamic_cast<einsum::EinsumNode*>(&libnode);
     ASSERT_TRUE(einsum_node);
 
     EXPECT_EQ(einsum_node->dims().size(), 1);
@@ -665,9 +665,9 @@ TEST(EinsumNodeTest, ExpandMean) {
 
     // ... summation
     auto& libnode = builder.add_library_node<
-        math::tensor::EinsumNode,
+        einsum::EinsumNode,
         const std::vector<std::string>&,
-        const std::vector<math::tensor::EinsumDimension>&,
+        const std::vector<einsum::EinsumDimension>&,
         const data_flow::Subset&,
         const std::vector<data_flow::Subset>&>(block, DebugInfo(), {"_in"}, {{i, zero, m}}, {}, {{i}});
     builder.add_computational_memlet(block, a_sum, libnode, "_in", {}, desc);
@@ -684,7 +684,7 @@ TEST(EinsumNodeTest, ExpandMean) {
     builder.add_computational_memlet(block, tasklet_div2, "_out", y3, {});
 
     // Check
-    auto* einsum_node = dynamic_cast<math::tensor::EinsumNode*>(&libnode);
+    auto* einsum_node = dynamic_cast<einsum::EinsumNode*>(&libnode);
     ASSERT_TRUE(einsum_node);
 
     analysis::AnalysisManager analysis_manager(builder.subject());
@@ -870,9 +870,9 @@ TEST(EinsumSerializerTest, Serialize) {
     auto& C1 = builder.add_access(block, "C");
     auto& C2 = builder.add_access(block, "C");
     auto& libnode = builder.add_library_node<
-        math::tensor::EinsumNode,
+        einsum::EinsumNode,
         const std::vector<std::string>&,
-        const std::vector<math::tensor::EinsumDimension>&,
+        const std::vector<einsum::EinsumDimension>&,
         const data_flow::Subset&,
         const std::vector<data_flow::Subset>&>(
         block, DebugInfo(), {"_in1", "_in2"}, {{i, zero, l}, {j, zero, m}, {k, zero, n}}, {i, j}, {{i, k}, {k, j}}
@@ -886,7 +886,7 @@ TEST(EinsumSerializerTest, Serialize) {
 
     dump_sdfg(builder.subject(), "0.init");
 
-    math::tensor::EinsumSerializer serializer;
+    einsum::EinsumSerializer serializer;
     auto libnode_j = serializer.serialize(libnode);
 
     EXPECT_TRUE(libnode_j.contains("type"));
@@ -1020,7 +1020,7 @@ TEST(EinsumSerializerTest, Deserialize) {
     auto& C2 = builder.add_access(block, "C");
 
     // Deserialize einsum node for GEMM
-    math::tensor::EinsumSerializer serializer;
+    einsum::EinsumSerializer serializer;
     const std::string json = R"(
 {
     "type": "library_node",
@@ -1062,7 +1062,7 @@ TEST(EinsumSerializerTest, Deserialize) {
     builder.add_computational_memlet(block, C1, libnode, "__einsum_out", {}, desc_m);
     builder.add_computational_memlet(block, libnode, "__einsum_out", C2, {}, desc_m);
 
-    auto* einsum_node = dynamic_cast<math::tensor::EinsumNode*>(&libnode);
+    auto* einsum_node = dynamic_cast<einsum::EinsumNode*>(&libnode);
     ASSERT_TRUE(einsum_node);
 
     EXPECT_EQ(einsum_node->dims().size(), 3);
