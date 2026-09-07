@@ -63,8 +63,18 @@ public:
         );
     }
 
-    /// The canonical scratchpad hierarchy: Device->Global, Group->Shared, Subgroup->Register.
-    Space space(Level level) const override { return ::sdfg::tiles::default_space(level); }
+    /// The GPU scratchpad hierarchy: Device->Global, Group->Shared, Subgroup->Register.
+    Space space(Level level) const override {
+        switch (level) {
+            case Level::Device:
+                return Space::Global; // device-wide cooperation (GPU grid): only global memory
+            case Level::Group:
+                return Space::Shared;
+            case Level::Subgroup:
+                return Space::Register;
+        }
+        return Space::Register;
+    }
 
     bool supports_cooperative_staging(const structured_control_flow::ScheduleType& sched) const override {
         // Only the offload schedule carries a separable block-thread copy Map; the

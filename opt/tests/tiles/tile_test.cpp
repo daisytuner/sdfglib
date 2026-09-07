@@ -4,15 +4,22 @@
 
 using namespace sdfg::tiles;
 
-TEST(TileTest, SpaceForLevelLattice) {
-    EXPECT_EQ(default_space(Level::Device), Space::Global);
-    EXPECT_EQ(default_space(Level::Group), Space::Shared);
-    EXPECT_EQ(default_space(Level::Subgroup), Space::Register);
+namespace {
+/// The GPU scratchpad hierarchy used to build axes in these neutral-core tests.
+Space gpu_space(Level level) {
+    switch (level) {
+        case Level::Device:
+            return Space::Global;
+        case Level::Group:
+            return Space::Shared;
+        case Level::Subgroup:
+            return Space::Register;
+    }
+    return Space::Register;
 }
 
-namespace {
 TileAxis axis(Role r, Level lvl) {
-    return TileAxis(sdfg::symbolic::symbol("i"), r, AxisSchedule(lvl, default_space(lvl), /*has_scratchpad=*/true));
+    return TileAxis(sdfg::symbolic::symbol("i"), r, AxisSchedule(lvl, gpu_space(lvl), /*has_scratchpad=*/true));
 }
 } // namespace
 

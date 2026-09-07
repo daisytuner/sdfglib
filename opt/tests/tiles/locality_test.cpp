@@ -20,14 +20,25 @@ using namespace sdfg;
 
 namespace {
 
+/// The GPU scratchpad hierarchy used to build axes in these neutral-core tests.
+tiles::Space gpu_space(tiles::Level level) {
+    switch (level) {
+        case tiles::Level::Device:
+            return tiles::Space::Global;
+        case tiles::Level::Group:
+            return tiles::Space::Shared;
+        case tiles::Level::Subgroup:
+            return tiles::Space::Register;
+    }
+    return tiles::Space::Register;
+}
+
 /// A cooperative/per-thread scratchpad (GPU-like) axis at @p level for required_space tests.
 tiles::TileAxis make_gpu_axis(bool cooperative, tiles::Level level = tiles::Level::Group) {
     return tiles::TileAxis(
         symbolic::symbol("i"),
         cooperative ? tiles::Role::Cooperative : tiles::Role::Private,
-        tiles::AxisSchedule(
-            level, tiles::default_space(level), /*has_scratchpad=*/true, /*spatial_axis=*/0, symbolic::integer(32)
-        )
+        tiles::AxisSchedule(level, gpu_space(level), /*has_scratchpad=*/true, /*spatial_axis=*/0, symbolic::integer(32))
     );
 }
 

@@ -38,12 +38,6 @@ enum class Space { Global, Shared, Register };
 /// Whether the tile is per-iteration-private or shared across a parallel axis.
 enum class Role { Private, Cooperative };
 
-/// The memory space backing cooperation at @p level in the canonical scratchpad
-/// hierarchy (Device->Global, Group->Shared, Subgroup->Register): the default a
-/// scratchpad target reuses. A target may remap it via @ref TileTarget::space
-/// (e.g. a flat CPU sends every level to Global, having no scratchpad).
-Space default_space(Level level);
-
 /// Target-neutral cooperation facts derived from one loop's schedule.
 class AxisSchedule {
     Level level_ = Level::Device;

@@ -8,18 +8,6 @@
 namespace sdfg {
 namespace tiles {
 
-Space default_space(Level level) {
-    switch (level) {
-        case Level::Device:
-            return Space::Global; // device-wide cooperation (GPU grid / CPU threads): only global memory
-        case Level::Group:
-            return Space::Shared;
-        case Level::Subgroup:
-            return Space::Register;
-    }
-    return Space::Register;
-}
-
 AxisSchedule::AxisSchedule(
     Level level, Space space, bool has_scratchpad, unsigned spatial_axis, symbolic::Integer parallel_size, bool needs_sync
 )
