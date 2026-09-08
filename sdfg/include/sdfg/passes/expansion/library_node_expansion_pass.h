@@ -109,6 +109,7 @@ class LibraryNodeExpansionPass : public Pass {
 public:
     static constexpr std::string_view NAME{"library_node_expansion"};
     static constexpr OptionKey<bool> FORCE_EXPAND{"library_node_expansion.force_expand"};
+    static constexpr OptionKey<bool> ONLINE_SOFTMAX{"library_node_expansion.online_softmax"};
 
     LibraryNodeExpansionPass() : expander_(std::make_shared<MathNodeExpander>()) {}
     explicit LibraryNodeExpansionPass(const Options& options)
@@ -119,7 +120,14 @@ public:
     std::string name() override { return std::string(NAME); }
 
     std::vector<OptionSpec> options() override {
-        return {FORCE_EXPAND.spec(false, "Also lower all library nodes that already have an implementation type")};
+        return {
+            FORCE_EXPAND.spec(false, "Also lower all library nodes that already have an implementation type"),
+            ONLINE_SOFTMAX.spec(
+                false,
+                "Expand softmax as the single-pass online (log-sum-exp monoid) form instead of the default "
+                "three-pass (max; exp+sum; normalize) form"
+            )
+        };
     }
 
     bool run_pass(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) override;
