@@ -1,5 +1,6 @@
 #pragma once
 #include "sdfg/builder/structured_sdfg_builder.h"
+#include "sdfg/options.h"
 #include "sdfg/structured_control_flow/block.h"
 
 namespace sdfg::passes {
@@ -131,6 +132,10 @@ public:
         virtual ExpandOutcome unable() = 0;
 
         virtual ExpandOutcome unapplicable() = 0;
+
+        /// Compile options for this run, so expanders can select variants (e.g. an
+        /// online vs. multi-pass lowering) via registered option keys.
+        virtual const Options& options() const = 0;
     };
 
     virtual ExpandOutcome handle_expand(

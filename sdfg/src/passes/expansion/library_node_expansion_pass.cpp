@@ -18,7 +18,8 @@ LibNodeExpansionVisitor::NodeOutcome LibNodeExpansionVisitor::
     auto expander = expander_.for_lib_node(node);
 
     if (expander) {
-        expansion::LibNodeExpansionContext ctx(this->builder_, parent, child_idx, block, node);
+        expansion::LibNodeExpansionContext
+            ctx(this->builder_, parent, child_idx, block, node, this->analysis_manager_.options());
 
         auto outcome = expander->handle_expand(ctx, block, node);
 
