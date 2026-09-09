@@ -1,4 +1,4 @@
-name: Sanitizer Tests (Leak)
+name: Sanitizer Tests (macOS)
 
 on:
   push:
@@ -8,12 +8,10 @@ on:
     types: [opened, reopened, synchronize]
 
 jobs:
-  sanitizer-linux-lsan:
+  sanitizer-macos-asan:
     runs-on:
       group: dahlia
-      labels: openmp
-    container:
-      image: daisytuner/docc-run-env-llvm21-ubuntu-24.04:latest-amd64
+      labels: macOS
 
     steps:
       - uses: actions/checkout@v4
@@ -21,12 +19,11 @@ jobs:
           token: ${{ secrets.BENCHMARK_TESTS_TOKEN }}
           submodules: recursive
 
-      - name: Formatting
-        shell: bash
+      - name: Install dependencies
         run: |
-          shopt -s globstar
-          clang-format-19 -style=file --dry-run --Werror sdfg/include/**/*.h sdfg/src/**/*.cpp sdfg/tests/**/*.cpp
-          clang-format-19 -style=file --dry-run --Werror opt/include/**/*.h opt/src/**/*.cpp opt/tests/**/*.cpp
+          brew install ninja cmake
+          brew install gmp isl nlohmann-json boost
+          brew install libomp
 
       - name: Build
         run: |
@@ -34,16 +31,14 @@ jobs:
           cd build
           cmake \
             -G Ninja \
-            -DCMAKE_C_COMPILER=clang-21 \
-            -DCMAKE_CXX_COMPILER=clang++-21 \
             -DCMAKE_BUILD_TYPE=Debug \
             -DSDFG_ENABLE_SANITIZER=ON \
-            -DSDFG_SANITIZER=leak \
+            -DSDFG_SANITIZER=address \
             -DBUILD_TESTS:BOOL=OFF \
             -DBUILD_BENCHMARKS:BOOL=OFF \
             -DBUILD_BENCHMARKS_GOOGLE:BOOL=OFF  \
             ..
-          ninja -j$(nproc)
+          ninja
 
       - name: Unit Tests
         run: |
