@@ -51,8 +51,6 @@ set(TEST_FILES
     transformations/offloading/rocm_parallelize_nested_map_test.cpp
     transformations/offloading/rocm_transform_test.cpp
     transformations/offloading/cuda_transform_im2col_test.cpp
-    transformations/offloading/gpu_tiling_test.cpp
-    transformations/offloading/kernel_local_storage_test.cpp
     transformations/offloading/cublas_data_transfer_extraction_test.cpp
     transformations/offloading/rocblas_data_transfer_extraction_test.cpp
     transformations/offloading/cuda_stdlib_data_transfer_extraction_test.cpp
@@ -61,8 +59,6 @@ set(TEST_FILES
     transformations/offloading/cuda_offload_transform_test.cpp
     transformations/offloading/rocm_offload_transform_test.cpp
     optimizations/diamond_tiling_test.cpp
-    optimizations/blocking_test.cpp
-    optimizations/gpu_kernels_test.cpp
     passes/redundant_load_elimination_pass_test.cpp
     passes/offloading/cuda_library_node_transfer_extraction_pass_test.cpp
     passes/offloading/cuda_library_node_expand_tests.cpp
@@ -93,8 +89,6 @@ set(TEST_FILES
     transformations/map_fusion_test.cpp
     transformations/multi_level_tiling_test.cpp
     transformations/stream_k_test.cpp
-    transformations/out_local_storage_test.cpp
-    transformations/in_local_storage_test.cpp
     transformations/recorder_test.cpp
     transformations/vectorize_transform_test.cpp
     transformations/unroll_transform_test.cpp

@@ -2785,9 +2785,6 @@ TEST(LocalStorageTest, Apply_Cooperative_Mixed_CoopOuter) {
     EXPECT_FALSE(block_uses(*main_block_outer, "A"));
 }
 
-/**
- * Extracted from a recipe with old OutLocalStorage that produced wrong code.
- */
 TEST(LocalStorageTest, Matmul_WrongTiledLoop) {
     builder::StructuredSDFGBuilder builder("sdfg_1", FunctionType_CPU);
     auto& sdfg = builder.subject();

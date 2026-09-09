@@ -67,7 +67,6 @@ set(SOURCE_FILES
     src/passes/offloading/gpu_loop_reordering_pass.cpp
     src/passes/offloading/gpu_nested_offload_pass.cpp
     src/passes/offloading/gpu_nested_parallelization_pass.cpp
-    src/passes/offloading/gpu_tiling_pass.cpp
     src/passes/offloading/rocm_library_node_expansion_pass.cpp
     src/passes/offloading/rocm_library_node_rewriter_pass.cpp
     src/passes/offloading/rocm_library_node_transfer_extraction_pass.cpp
@@ -128,7 +127,6 @@ set(SOURCE_FILES
     src/targets/rocm/stdlib/memset.cpp
     src/targets/vectorize/codegen/vectorize_dispatcher.cpp
     src/transformations/collapse_to_depth.cpp
-    src/transformations/in_local_storage.cpp
     src/transformations/loop_condition_normalize.cpp
     src/transformations/loop_distribute.cpp
     src/transformations/loop_indvar_finalize.cpp
@@ -153,8 +151,6 @@ set(SOURCE_FILES
     src/transformations/offloading/gpu_loop_reordering.cpp
     src/transformations/offloading/gpu_offload_nested_loop.cpp
     src/transformations/offloading/gpu_offload_transform.cpp
-    src/transformations/offloading/gpu_tiling.cpp
-    src/transformations/offloading/kernel_local_storage.cpp
     src/transformations/offloading/offload_transform.cpp
     src/transformations/offloading/rocblas_data_transfer_extraction.cpp
     src/transformations/offloading/rocm_offload_transform.cpp
@@ -162,7 +158,6 @@ set(SOURCE_FILES
     src/transformations/offloading/rocm_stdlib_data_transfer_extraction.cpp
     src/transformations/offloading/rocm_transform.cpp
     src/transformations/omp_transform.cpp
-    src/transformations/out_local_storage.cpp
     src/transformations/recorder.cpp
     src/transformations/replayer.cpp
     src/transformations/stream_k.cpp

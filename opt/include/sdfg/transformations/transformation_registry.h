@@ -14,7 +14,6 @@
 #include <sdfg/einsum/einsum.h>
 #include <sdfg/tiles/transformations/local_storage.h>
 #include <sdfg/tiles/transformations/tile_fusion.h>
-#include <sdfg/transformations/in_local_storage.h>
 #include <sdfg/transformations/loop_distribute.h>
 #include <sdfg/transformations/loop_interchange.h>
 #include <sdfg/transformations/loop_peeling.h>
@@ -30,13 +29,10 @@
 #include <sdfg/transformations/offloading/gpu_condition_propagation.h>
 #include <sdfg/transformations/offloading/gpu_loop_reordering.h>
 #include <sdfg/transformations/offloading/gpu_offload_nested_loop.h>
-#include <sdfg/transformations/offloading/gpu_tiling.h>
-#include <sdfg/transformations/offloading/kernel_local_storage.h>
 #include <sdfg/transformations/offloading/rocm_offload_transform.h>
 #include <sdfg/transformations/offloading/rocm_parallelize_nested_map.h>
 #include <sdfg/transformations/offloading/rocm_transform.h>
 #include <sdfg/transformations/omp_transform.h>
-#include <sdfg/transformations/out_local_storage.h>
 #include <sdfg/transformations/unroll_transform.h>
 #include <sdfg/transformations/vectorize_transform.h>
 
@@ -119,10 +115,6 @@ dispatch_transformation(const std::string& transformation_name, const nlohmann::
         return detail::invoke_for<transformations::LoopInterchange>(std::forward<Visitor>(visitor));
     } else if (transformation_name == "LocalStorage") {
         return detail::invoke_for<transformations::LocalStorage>(std::forward<Visitor>(visitor));
-    } else if (transformation_name == "OutLocalStorage") {
-        return detail::invoke_for<transformations::OutLocalStorage>(std::forward<Visitor>(visitor));
-    } else if (transformation_name == "InLocalStorage") {
-        return detail::invoke_for<transformations::InLocalStorage>(std::forward<Visitor>(visitor));
     } else if (transformation_name == "TileFusion") {
         return detail::invoke_for<transformations::TileFusion>(std::forward<Visitor>(visitor));
     } else if (transformation_name == "LoopSkewing") {
@@ -164,12 +156,8 @@ dispatch_transformation(const std::string& transformation_name, const nlohmann::
         }
     } else if (transformation_name == "GPUConditionPropagation") {
         return detail::invoke_for<transformations::GPUConditionPropagation>(std::forward<Visitor>(visitor));
-    } else if (transformation_name == "GPUTiling") {
-        return detail::invoke_for<transformations::GPUTiling>(std::forward<Visitor>(visitor));
     } else if (transformation_name == "GPULoopReordering") {
         return detail::invoke_for<transformations::GPULoopReordering>(std::forward<Visitor>(visitor));
-    } else if (transformation_name == "KernelLocalStorage") {
-        return detail::invoke_for<transformations::KernelLocalStorage>(std::forward<Visitor>(visitor));
     } else if (transformation_name == "EinsumLift") {
         return detail::invoke_for<einsum::EinsumLift>(std::forward<Visitor>(visitor));
     } else if (transformation_name == "EinsumExtend") {
