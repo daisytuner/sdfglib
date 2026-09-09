@@ -55,6 +55,10 @@ jobs:
           ninja -j$(nproc)
           ninja install
 
+      - name: Unit Tests
+        run: |
+          cd build/
+
           ctest --label-exclude "sdfgrpc|sdfgrpc_daisytuner_rpc" --parallel
 
       - name: Test RTL

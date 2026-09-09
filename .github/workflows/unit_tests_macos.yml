@@ -62,6 +62,7 @@ jobs:
       - name: Unit Tests
         run: |
           cd build/
+
           ctest --label-exclude "sdfgrpc|sdfgrpc_daisytuner_rpc" --parallel
 
       - name: Python Unit Tests

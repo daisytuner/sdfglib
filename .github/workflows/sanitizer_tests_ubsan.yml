@@ -44,4 +44,9 @@ jobs:
             -DBUILD_BENCHMARKS_GOOGLE:BOOL=OFF  \
             ..
           ninja -j$(nproc)
+
+      - name: Unit Tests
+        run: |
+          cd build/
+
           ctest --label-exclude "sdfgrpc|sdfgrpc_daisytuner_rpc" --parallel
