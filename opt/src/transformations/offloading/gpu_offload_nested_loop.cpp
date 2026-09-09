@@ -7,6 +7,7 @@
 #include <sdfg/analysis/loop_analysis.h>
 #include "sdfg/analysis/base_user_visitor.h"
 #include "sdfg/data_flow/access_node.h"
+#include "sdfg/data_flow/library_nodes/barrier_local_node.h"
 #include "sdfg/data_flow/memlet.h"
 #include "sdfg/structured_control_flow/block.h"
 #include "sdfg/structured_control_flow/reduce.h"
@@ -289,13 +290,13 @@ bool GPUOffloadNestedLoop<
     // the natural strided value; `num_iterations()` accounts for both when
     // computing the grid geometry.
 
-    // Condition: Parallelizing this loop must not introduce a data race. Folding a new
-    // grid dimension distributes this loop's iterations across the new threads and
-    // re-runs every unguarded sibling on each of them, with no grid-wide barrier. That
-    // races when this loop produces a shared container a sibling consumes (a reduction
-    // accumulator -> consumer, e.g. softmax) or when a sibling read-modify-writes a
-    // shared container. Such a loop must be parallelized differently or left sequential.
-    if (gpu::nested_parallelization_is_unsafe(loop_, analysis_manager)) {
+    // Condition: Parallelizing this loop must not introduce a data race no barrier
+    // can resolve. Folding a new dimension distributes this loop's iterations across
+    // the new threads and re-runs every unguarded sibling on each of them. A
+    // producer/consumer dependency within a block is made safe by the barrier that
+    // apply() inserts; only a cross-block (grid) dependency or a replicated
+    // self-accumulation is a hard reject.
+    if (gpu::analyze_nested_fold(loop_, target_level_, analysis_manager).unsafe) {
         return false;
     }
 
@@ -305,11 +306,39 @@ bool GPUOffloadNestedLoop<
 template<typename GPUType>
 void GPUOffloadNestedLoop<
     GPUType>::apply(builder::StructuredSDFGBuilder& builder, analysis::AnalysisManager& analysis_manager) {
-    auto& loop_analysis = analysis_manager.get<analysis::LoopAnalysis>();
+    auto plan = gpu::analyze_nested_fold(loop_, target_level_, analysis_manager);
 
     auto new_schedule = GPUType::template create<GPUType>(target_level_, parallel_size_);
-
     builder.update_schedule_type(loop_, new_schedule);
+
+    auto barrier_precedes = [](structured_control_flow::Sequence& sequence,
+                               structured_control_flow::ControlFlowNode& before) {
+        const int index = sequence.index(before);
+        if (index <= 0) {
+            return false;
+        }
+        auto* block = dynamic_cast<structured_control_flow::Block*>(&sequence.at(static_cast<size_t>(index) - 1));
+        if (block == nullptr) {
+            return false;
+        }
+        for (auto& node : block->dataflow().nodes()) {
+            if (dynamic_cast<const data_flow::BarrierLocalNode*>(&node) != nullptr) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    for (const auto& barrier : plan.barriers) {
+        if (barrier.sequence == nullptr || barrier.before == nullptr) {
+            continue;
+        }
+        if (barrier_precedes(*barrier.sequence, *barrier.before)) {
+            continue;
+        }
+        auto& block = builder.add_block_before(*barrier.sequence, *barrier.before, DebugInfo());
+        builder.add_library_node<data_flow::BarrierLocalNode>(block, DebugInfo());
+    }
 }
 
 template<typename GPUType>
