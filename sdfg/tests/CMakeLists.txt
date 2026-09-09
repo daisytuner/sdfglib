@@ -161,4 +161,6 @@ endif()
 add_test(NAME sdfglib_test_test COMMAND sdfglib_test)
 
 include(GoogleTest)
-gtest_discover_tests(sdfglib_test)
+gtest_discover_tests(sdfglib_test
+  PROPERTIES LABELS "sdfglib"
+)

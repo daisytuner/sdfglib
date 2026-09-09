@@ -45,8 +45,7 @@ jobs:
             ..
           ninja -j$(nproc)
 
-          ./sdfg/tests/sdfglib_test
-          ./opt/tests/sdfgopt_test
+          ctest --label-exclude "sdfgrpc|sdfgrpc_daisytuner_rpc" --parallel
 
   sanitizer-macos-asan:
     runs-on:
@@ -83,6 +82,4 @@ jobs:
       - name: Unit Tests
         run: |
           cd build/
-          ./sdfg/tests/sdfglib_test
-          ./opt/tests/sdfgopt_test
-          ./tutorial/printf_target/tests/printf_target_test
+          ctest --label-exclude "sdfgrpc|sdfgrpc_daisytuner_rpc" --parallel

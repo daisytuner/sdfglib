@@ -44,6 +44,4 @@ jobs:
             -DBUILD_BENCHMARKS_GOOGLE:BOOL=OFF  \
             ..
           ninja -j$(nproc)
-
-          ./sdfg/tests/sdfglib_test
-          ./opt/tests/sdfgopt_test
+          ctest --label-exclude "sdfgrpc|sdfgrpc_daisytuner_rpc" --parallel

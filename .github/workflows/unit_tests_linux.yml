@@ -172,7 +172,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pybind11 pytest coverage black==25.9.0 build scikit-build-core
+          pip install pybind11 coverage black==25.9.0 build scikit-build-core
+          pip install pytest==7.1.3 pytest-parallel
           pip install numpy scipy ml_dtypes jsonschema
 
           pip install cupy-rocm-7-0
@@ -341,7 +342,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pybind11 pytest coverage black==25.9.0 build scikit-build-core
+          pip install pybind11 coverage black==25.9.0 build scikit-build-core
+          pip install pytest==7.1.3 pytest-parallel
           pip install numpy scipy ml_dtypes jsonschema
 
       - name: Build
@@ -423,7 +425,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pybind11 pytest coverage black==25.9.0 build scikit-build-core
+          pip install pybind11 coverage black==25.9.0 build scikit-build-core
+          pip install pytest==7.1.3 pytest-parallel
           pip install sympy numpy ml_dtypes scipy
 
       - name: Formatting
@@ -449,16 +452,17 @@ jobs:
         run: |
           export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 
-          coverage run --source=python/docc -m pytest -v python/tests -m "unmarked or etsoc"
+          coverage run --source=python/docc -m pytest -v --workers auto python/tests -m "unmarked"
+          coverage run --source=python/docc -m pytest -v --workers auto python/tests -m "etsoc"
           coverage xml
 
       - name: Integration Tests
         run: |
           export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 
-          pytest -v python/benchmarks/ -k none
-          pytest -v python/benchmarks/ -k sequential
-          pytest -v python/benchmarks/ -k openmp
+          pytest -v --workers auto python/benchmarks/ -k none
+          pytest -v --workers auto python/benchmarks/ -k sequential
+          pytest -v --workers auto python/benchmarks/ -k openmp
 
       - name: Coveralls
         uses: coverallsapp/github-action@v2
@@ -576,7 +580,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pybind11 pytest coverage build scikit-build-core
+          pip install pybind11 coverage build scikit-build-core
+          pip install pytest==7.1.3 pytest-parallel
           pip install numpy scipy ml_dtypes jsonschema cupy-cuda12x transformers
 
           pip install -r mlir/requirements-cuda.txt
@@ -608,8 +613,11 @@ jobs:
           nvidia-smi
           export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 
-          pytest -v python/tests -m "cuda"
-          pytest -v python/benchmarks/ -k cuda
+          pytest -v --workers auto python/tests/cuda -m "cuda"
+          pytest -v python/tests/python/ -m "cuda"
+          pytest -v python/tests/sdfg/ -m "cuda"
+
+          pytest -v --workers auto python/benchmarks/ -k cuda
           pytest -v mlir/integration -m "cuda"
 
           # Segformer correctness test
@@ -664,7 +672,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pybind11 pytest coverage build scikit-build-core
+          pip install pybind11 coverage build scikit-build-core
+          pip install pytest==7.1.3 pytest-parallel
           pip install numpy scipy ml_dtypes jsonschema transformers
 
           pip install -r mlir/requirements-rocm.txt
@@ -700,8 +709,11 @@ jobs:
           export ROCM_HOME=/opt/rocm
           export LD_LIBRARY_PATH=/opt/rocm/lib:$LD_LIBRARY_PATH
 
-          pytest -v python/tests -m "rocm"
-          pytest -v python/benchmarks/ -k rocm
+          pytest -v --workers auto python/tests/rocm -m "rocm"
+          pytest -v python/tests/python/ -m "rocm"
+          pytest -v python/tests/sdfg/ -m "rocm"
+
+          pytest -v --workers auto python/benchmarks/ -k rocm
           pytest -v mlir/integration -m "rocm"
 
           pytest -v mlir/benchmarks/torch/model_zoo/segformer.py -k "rocm"
@@ -754,7 +766,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pybind11 pytest coverage build scikit-build-core
+          pip install pybind11 coverage build scikit-build-core
+          pip install pytest==7.1.3 pytest-parallel
           pip install numpy scipy ml_dtypes jsonschema
           pip install -r mlir/requirements.txt
 

@@ -55,9 +55,7 @@ jobs:
           ninja -j$(nproc)
           ninja install
 
-          ./sdfg/tests/sdfglib_test
-          ./opt/tests/sdfgopt_test
-          ./llvm/tests/docc_llvm_pass_test
+          ctest --label-exclude "sdfgrpc|sdfgrpc_daisytuner_rpc" --parallel
 
       - name: Test RTL
         run: |
@@ -106,11 +104,4 @@ jobs:
       - name: Unit Tests
         run: |
           cd build/
-          ./sdfg/tests/sdfglib_test
-          ./opt/tests/sdfgopt_test
-          ./tutorial/printf_target/tests/printf_target_test
-
-      - name: Test Arg-Capture-IO
-        run: |
-          cd build
-          ./arg-capture-io/tests/capture_io_test
+          ctest --label-exclude "sdfgrpc|sdfgrpc_daisytuner_rpc" --parallel
