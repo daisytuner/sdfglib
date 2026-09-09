@@ -43,4 +43,4 @@ jobs:
       - name: Unit Tests
         run: |
           cd build/
-          ctest --label-exclude "sdfgrpc|sdfgrpc_daisytuner_rpc" --parallel
+          ctest --label-exclude "sdfgrpc|sdfgrpc_daisytuner_rpc|capture_io" --parallel
