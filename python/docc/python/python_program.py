@@ -208,14 +208,21 @@ class PythonProgram(DoccProgram):
             stable_id = hashlib.sha256(hash_input).hexdigest()[:16]
             filename = os.path.basename(inspect.getsourcefile(self.func))
 
+            # Isolate parallel pytest-xdist workers so concurrent compilations of
+            # identically named kernels don't share (and clobber) one build dir.
+            worker = os.environ.get("PYTEST_XDIST_WORKER", "")
+            worker_suffix = f"-{worker}" if worker else ""
+
             docc_tmp = os.environ.get("DOCC_TMP")
             if docc_tmp:
-                output_folder = f"{docc_tmp}/{filename}-{self.name}-{self.options.target}-{stable_id}"
+                output_folder = f"{docc_tmp}/{filename}-{self.name}-{self.options.target}-{stable_id}{worker_suffix}"
             else:
                 user = os.getenv("USER")
                 if not user:
                     user = getpass.getuser()
-                output_folder = f"/tmp/{user}/DOCC/{self.name}-{stable_id}"
+                output_folder = (
+                    f"/tmp/{user}/DOCC/{self.name}-{stable_id}{worker_suffix}"
+                )
 
         if original_output_folder is None and mem_cache_key in self.cache:
             return self.cache[mem_cache_key]
