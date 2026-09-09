@@ -118,7 +118,7 @@ types::PrimitiveType accumulator_primitive(const StructuredSDFG& sdfg, const std
 // All accesses to the accumulator must use the same index, and that index must
 // be invariant in the reduction induction variable `indvar` -- otherwise the
 // body scatters across distinct slots per iteration and is not a reduction into
-// a single accumulator element (that requires OutLocalStorage / privatization
+// a single accumulator element (that requires privatization
 // analysis, which is out of scope for this baseline).
 symbolic::Expression accumulator_index(
     structured_control_flow::Sequence& root, const std::string& container, const symbolic::Symbol& indvar

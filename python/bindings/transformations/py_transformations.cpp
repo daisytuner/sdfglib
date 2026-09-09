@@ -10,7 +10,6 @@
 #include <sdfg/tiles/transformations/local_storage.h>
 #include <sdfg/tiles/transformations/software_pipelining.h>
 #include <sdfg/tiles/transformations/tile_fusion.h>
-#include <sdfg/transformations/in_local_storage.h>
 #include <sdfg/transformations/loop_distribute.h>
 #include <sdfg/transformations/loop_interchange.h>
 #include <sdfg/transformations/loop_peeling.h>
@@ -24,7 +23,6 @@
 #include <sdfg/transformations/offloading/gpu_offload_nested_loop.h>
 #include <sdfg/transformations/offloading/rocm_offload_transform.h>
 #include <sdfg/transformations/omp_transform.h>
-#include <sdfg/transformations/out_local_storage.h>
 #include <sdfg/transformations/recorder.h>
 #include <sdfg/transformations/stream_k.h>
 #include <sdfg/transformations/transformation.h>
@@ -156,23 +154,6 @@ void register_transformations(py::module& m) {
         .def("__repr__", [](const LoopSkewing& t) {
             std::ostringstream oss;
             oss << "<LoopSkewing name='" << t.name() << "'>";
-            return oss.str();
-        });
-
-    // OutLocalStorage transformation
-    py::class_<OutLocalStorage, Transformation>(m, "OutLocalStorage")
-        .def(
-            py::init<StructuredLoop&, const sdfg::data_flow::AccessNode&>(),
-            py::arg("loop"),
-            py::arg("access_node"),
-            "Create an out-of-loop local storage transformation.\n\n"
-            "Args:\n"
-            "    loop: The loop to optimize\n"
-            "    access_node: The access node to extract to local storage"
-        )
-        .def("__repr__", [](const OutLocalStorage& t) {
-            std::ostringstream oss;
-            oss << "<OutLocalStorage name='" << t.name() << "'>";
             return oss.str();
         });
 
@@ -491,37 +472,6 @@ void register_transformations(py::module& m) {
         .def("__repr__", [](const OMPTransform& t) {
             std::ostringstream oss;
             oss << "<OMPTransform name='" << t.name() << "'>";
-            return oss.str();
-        });
-
-    // InLocalStorage transformation (stage a read tile into local/shared storage)
-    py::class_<InLocalStorage, Transformation>(m, "InLocalStorage")
-        .def(
-            py::init([](StructuredLoop& loop,
-                        const sdfg::data_flow::AccessNode& access_node,
-                        const std::string& storage_type) {
-                sdfg::types::StorageType st = sdfg::types::StorageType::CPU_Stack();
-                if (storage_type == "NV_Shared") {
-                    st = sdfg::types::StorageType::NV_Shared();
-                } else if (storage_type == "CPU_Stack") {
-                    st = sdfg::types::StorageType::CPU_Stack();
-                } else {
-                    throw std::invalid_argument("Unsupported storage_type: " + storage_type);
-                }
-                return std::make_unique<InLocalStorage>(loop, access_node, st);
-            }),
-            py::arg("loop"),
-            py::arg("access_node"),
-            py::arg("storage_type") = "CPU_Stack",
-            "Create an in-local-storage transformation (stage a read tile).\n\n"
-            "Args:\n"
-            "    loop: The loop defining the localization scope\n"
-            "    access_node: The access node for the container to localize\n"
-            "    storage_type: 'CPU_Stack' (registers) or 'NV_Shared' (shared memory)"
-        )
-        .def("__repr__", [](const InLocalStorage& t) {
-            std::ostringstream oss;
-            oss << "<InLocalStorage name='" << t.name() << "'>";
             return oss.str();
         });
 
