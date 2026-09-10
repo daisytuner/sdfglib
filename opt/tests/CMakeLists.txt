@@ -121,4 +121,6 @@ endif()
 add_test(NAME sdfgopt_test_test COMMAND sdfgopt_test)
 
 include(GoogleTest)
-gtest_discover_tests(sdfgopt_test)
+gtest_discover_tests(sdfgopt_test
+  PROPERTIES LABELS "sdfgopt"
+)
