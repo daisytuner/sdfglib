@@ -1,9 +1,18 @@
 #include "sdfg/passes/structured_control_flow/dead_cfg_elimination.h"
 
-#include "sdfg/analysis/loop_analysis.h"
+#include <list>
+#include <unordered_set>
+
+#include "sdfg/builder/structured_sdfg_builder.h"
+#include "sdfg/data_flow/memlet.h"
+#include "sdfg/element.h"
+#include "sdfg/structured_control_flow/block.h"
+#include "sdfg/structured_control_flow/control_flow_node.h"
+#include "sdfg/structured_control_flow/if_else.h"
+#include "sdfg/structured_control_flow/sequence.h"
 #include "sdfg/structured_control_flow/structured_loop.h"
-#include "sdfg/symbolic/assumptions.h"
-#include "sdfg/symbolic/conjunctive_normal_form.h"
+#include "sdfg/structured_control_flow/while.h"
+#include "sdfg/symbolic/symbolic.h"
 
 namespace sdfg {
 namespace passes {
@@ -41,6 +50,63 @@ bool DeadCFGElimination::is_trivial(structured_control_flow::Map* loop) {
         return false;
     }
     return symbolic::eq(trip_count, symbolic::one());
+}
+
+void DeadCFGElimination::
+    update_loop_indvar_accesses(builder::StructuredSDFGBuilder& builder, structured_control_flow::Map* loop) {
+    symbolic::Symbol indvar = loop->indvar();
+    const auto& indvar_type = builder.subject().type(indvar->get_name());
+    std::list<structured_control_flow::ControlFlowNode*> queue = {&loop->root()};
+    while (!queue.empty()) {
+        auto* current = queue.front();
+        queue.pop_front();
+
+        if (auto* block = dyn_cast<structured_control_flow::Block*>(current)) {
+            auto access_nodes = block->dataflow().data_nodes();
+            for (auto* access_node : access_nodes) {
+                // Skip constant nodes
+                if (is_a(access_node->type_id(), ElementType::ConstantNode)) {
+                    continue;
+                }
+                // Skip access nodes on containers other than the indvar
+                if (access_node->data() != indvar->get_name()) {
+                    continue;
+                }
+
+                auto& new_constant_node = builder.add_constant(*block, "0", indvar_type, access_node->debug_info());
+                std::unordered_set<data_flow::Memlet*> old_memlets;
+                for (auto& memlet : block->dataflow().out_edges(*access_node)) {
+                    builder.add_memlet(
+                        *block,
+                        new_constant_node,
+                        memlet.src_conn(),
+                        memlet.dst(),
+                        memlet.dst_conn(),
+                        memlet.subset(),
+                        memlet.base_type(),
+                        memlet.debug_info()
+                    );
+                    old_memlets.insert(&memlet);
+                }
+                for (auto* old_memlet : old_memlets) {
+                    builder.remove_memlet(*block, *old_memlet);
+                }
+                builder.remove_node(*block, *access_node);
+            }
+        } else if (auto* if_else = dyn_cast<structured_control_flow::IfElse*>(current)) {
+            for (long long i = 0; i < if_else->size(); i++) {
+                queue.push_back(&if_else->at(i).first);
+            }
+        } else if (auto* sequence = dyn_cast<structured_control_flow::Sequence*>(current)) {
+            for (long long i = 0; i < sequence->size(); i++) {
+                queue.push_back(&sequence->at(i));
+            }
+        } else if (auto* structured_loop = dyn_cast<structured_control_flow::StructuredLoop*>(current)) {
+            queue.push_back(&structured_loop->root());
+        } else if (auto* while_loop = dyn_cast<structured_control_flow::While*>(current)) {
+            queue.push_back(&while_loop->root());
+        }
+    }
 }
 
 DeadCFGElimination::DeadCFGElimination()
@@ -120,6 +186,7 @@ bool DeadCFGElimination::run_pass(builder::StructuredSDFGBuilder& builder, analy
                         auto indvar = sloop->indvar();
                         auto init = sloop->init();
                         sloop->root().replace(indvar, init);
+                        this->update_loop_indvar_accesses(builder, sloop);
 
                         // Move children from loop body to parent sequence
                         builder.move_children(sloop->root(), *sequence_stmt, i + 1);
