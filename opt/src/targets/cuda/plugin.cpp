@@ -14,16 +14,16 @@
 namespace sdfg::cuda {
 
 void register_cuda_plugin(plugins::Context& context) {
-    auto& libNodeDispatcherRegistry = context.library_node_dispatcher_registry;
-    auto& mapDispatcherRegistry = context.map_dispatcher_registry;
-    auto& reduceDispatcherRegistry = context.reduce_dispatcher_registry;
-    auto& libNodeSerRegistry = context.library_node_serializer_registry;
+    auto& libNodeDispatcherRegistry = context.get_library_node_dispatcher_registry();
+    auto& mapDispatcherRegistry = context.get_map_dispatcher_registry();
+    auto& reduceDispatcherRegistry = context.get_reduce_dispatcher_registry();
+    auto& libNodeSerRegistry = context.get_library_node_serializer_registry();
 
     // The tile algebra's view of CUDA: warp width + level/storage mapping, shared
     // under both the legacy and the offload schedule value.
     auto cuda_tile_target = std::make_shared<tiles::GPUTileTarget>(CUDA_WARP_SIZE, ScheduleType_CUDA_Offload::value());
-    context.tile_target_registry.register_target(ScheduleType_CUDA::value(), cuda_tile_target);
-    context.tile_target_registry.register_target(ScheduleType_CUDA_Offload::value(), cuda_tile_target);
+    context.get_tile_target_registry().register_target(ScheduleType_CUDA::value(), cuda_tile_target);
+    context.get_tile_target_registry().register_target(ScheduleType_CUDA_Offload::value(), cuda_tile_target);
 
     mapDispatcherRegistry.register_map_dispatcher(
         ScheduleType_CUDA::value(),
@@ -255,8 +255,9 @@ void register_cuda_plugin(plugins::Context& context) {
     );
 
 
-    context.scheduler_registry.register_loop_scheduler<
-        passes::scheduler::CUDAOffloadScheduler>(passes::scheduler::CUDAOffloadScheduler::target());
+    context.get_scheduler_registry()
+        .register_loop_scheduler<
+            passes::scheduler::CUDAOffloadScheduler>(passes::scheduler::CUDAOffloadScheduler::target());
 }
 
 } // namespace sdfg::cuda

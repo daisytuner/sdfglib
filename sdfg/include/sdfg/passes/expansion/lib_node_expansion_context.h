@@ -31,6 +31,8 @@ public:
                                                                                          LibNodeExpander::InputUse>&
                                                                                              access_dirs) override;
 
+    LibNodeExpander::ExpandOutcome successfully_modified_node_only() override;
+
     LibNodeExpander::ExpandOutcome unable() override;
     LibNodeExpander::ExpandOutcome unapplicable() override;
 
